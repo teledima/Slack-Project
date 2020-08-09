@@ -50,7 +50,8 @@ class User:
         for key in kwargs.keys():
             self.parameters[key] = kwargs[key]
 
-        get_user_page = requests.get(url=url, cookies=cookie, headers=headers) if None in self.parameters.values() else None
+        get_user_page = requests.get(url=url, cookies=cookie,
+                                     headers=headers) if None in self.parameters.values() else None
         # if we can get the user page then we can extract info about user
         if get_user_page is not None and get_user_page.status_code == 200:
             selector = Selector(text=get_user_page.text)
@@ -149,7 +150,11 @@ def find_user_spreadsheet(url):
 def find_in_table(table, url):
     try:
         worksheet = spreadsheet.worksheet(table)
-        headers_table = [header.lower() for header in worksheet.row_values(1)]
+        headers_table = []
+        for header in worksheet.row_values(1):
+            if not header:
+                break
+            headers_table.append(header.lower())
         values = worksheet.row_values(worksheet.find(url).row)
         values = values + [''] * (len(headers_table) - len(values))
         return dict(zip(headers_table + ['таблица'], values + [worksheet.title]))

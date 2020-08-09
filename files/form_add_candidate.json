@@ -1,0 +1,225 @@
+{
+	"type": "modal",
+	"callback_id": "candidate_form",
+	"title": {
+		"type": "plain_text",
+		"text": "My App",
+		"emoji": true
+	},
+	"submit": {
+		"type": "plain_text",
+		"text": "Submit",
+		"emoji": true
+	},
+	"close": {
+		"type": "plain_text",
+		"text": "Cancel",
+		"emoji": true
+	},
+	"blocks": [
+		{
+			"type": "input",
+			"element": {
+				"type": "plain_text_input"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Профиль"
+			}
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "plain_text_input"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Источник заявки",
+				"emoji": true
+			},
+			"optional": true
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "radio_buttons",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Высокая",
+							"emoji": true
+						},
+						"value": "В"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Средняя",
+							"emoji": true
+						},
+						"value": "С"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Низкая",
+							"emoji": true
+						},
+						"value": "Н"
+					}
+				]
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Срочность",
+				"emoji": true
+			}
+		},
+		{
+			"type": "input",
+			"block_id": "subject_block",
+			"label": {
+				"type": "plain_text",
+				"text": "Основной предмет"
+			},
+			"element": {
+				"type": "static_select",
+				"action_id": "subject_action",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Математика"
+						},
+						"value": "maths"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Литература"
+						},
+						"value": "literature"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Русский язык"
+						},
+						"value": "rus_lang"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Английский язык"
+						},
+						"value": "en_lang"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Химия"
+						},
+						"value": "chemistry"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Физика"
+						},
+						"value": "physics"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Биология"
+						},
+						"value": "biology"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Алгебра"
+						},
+						"value": "algebra"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Геометрия"
+						},
+						"value": "geometry"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "География"
+						},
+						"value": "geography"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Информатика"
+						},
+						"value": "informatics"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": "Українська мова"
+						},
+						"value": "ukr_lang"
+					}
+				]
+			}
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "plain_text_input",
+				"multiline": true
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Дополнительные заметки"
+			},
+			"optional": true
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "plain_text_input"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Ник проверяющего",
+				"emoji": true
+			},
+			"optional": true
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "datepicker"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Дата отказа/приглашения",
+				"emoji": true
+			},
+			"optional": true
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "plain_text_input"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Статус заявки",
+				"emoji": true
+			}
+		}
+	]
+}
