@@ -42,6 +42,7 @@ def get_info():
     return reply('Got it!')
 
 
+@async_task
 def get_info_background(client, req):
     info = find_user_spreadsheet(req['text'])
     if all(i is None for i in info):
