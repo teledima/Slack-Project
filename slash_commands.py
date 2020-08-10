@@ -1,19 +1,25 @@
 import constants
 import requests
 import json
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 from znatoks import find_user_spreadsheet
-from slackify import Slackify, async_task, reply_text, OK
 from slack.web.classes import blocks
-from slack import WebClient
+from slack.web.client import WebClient
 from slack.errors import SlackApiError
+from tasks import async_task
 
 app = Flask(__name__)
-slackify_app = Slackify(app=app)
 
 
 def ephemeral_message(response_url, text):
     requests.post(response_url, data=json.dumps({'content_type': 'ephemeral', 'text': text}))
+
+
+def reply(text: str):
+    return jsonify(
+        content_type='ephemeral',
+        text=text
+    )
 
 
 def is_admin(client, req):
@@ -24,19 +30,18 @@ def is_admin(client, req):
         return False
 
 
-@slackify_app.command(name='get_info', methods=['POST'])
+@app.route('/get_info', methods=['POST'])
 def get_info():
     req = request.form
     client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
     if not is_admin(client, req):
-        return reply_text("You don't have permission")
+        return reply("You don't have permission")
     if not req['text']:
-        return reply_text('Query is empty')
+        return reply('Query is empty')
     get_info_background(client, request.form)
-    return reply_text('Got it!')
+    return reply('Got it!')
 
 
-@async_task
 def get_info_background(client, req):
     info = find_user_spreadsheet(req['text'])
     if all(i is None for i in info):
@@ -59,7 +64,7 @@ def entry_point():
     if payload['type'] == 'shortcut':
         try:
             client.views_open(trigger_id=payload['trigger_id'], view=get_view('files/validate_form.json'))
-            return make_response(OK)
+            return make_response('', 200)
         except SlackApiError as e:
             code = e.response["error"]
             return make_response(f"Failed to open a modal due to {code}", 200)
@@ -72,7 +77,7 @@ def entry_point():
             form_expert_submit(client, payload)
         elif payload['view']['callback_id'] == 'candidate_form':
             form_candidate_submit(client, payload)
-        return make_response(OK)
+        return make_response('', 200)
 
     return make_response('', 404)
 
