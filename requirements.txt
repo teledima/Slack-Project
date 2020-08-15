@@ -1,5 +1,8 @@
 flask
+gunicorn==19.3.0
 requests
-slack
+slackclient
 oauth2client
 gspread
+beautifulsoup4
+lxml==4.5.2
