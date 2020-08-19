@@ -1,14 +1,9 @@
 import requests
 import json
-import re
 import gspread
 import gspread.exceptions as errors_sheet
 from oauth2client.service_account import ServiceAccountCredentials
 from bs4 import BeautifulSoup
-from slack import WebClient
-import slack.errors as slack_errors
-
-import constants
 
 
 class SameUserError(Exception):
@@ -54,13 +49,8 @@ def find_in_table(worksheet, url):
         pass
 
 
-def get_display_name(user_id):
-    try:
-        info = WebClient(token=constants.SLACK_OAUTH_TOKEN).users_info(user=user_id).data
-        if info['ok']:
-            return info['user']['profile']['display_name']
-    except slack_errors.SlackApiError as e:
-        raise e
+def get_text(url_page):
+    return requests.get(url=url_page, headers=json.load(open('files/headers.json', 'r'))).text
 
 
 def is_expert(nick_name):
@@ -68,55 +58,37 @@ def is_expert(nick_name):
     return True
 
 
-def check_answer(list_authors, user_add_ans_name, user_ex_com_name):
+def check_answer(list_authors, user_ex_com_name, user_add_ans_name,):
     for nick_name in list_authors:
         # /wonderful_answer url @nick
         if user_add_ans_name is not None:
             if nick_name == user_add_ans_name:
-                return {'ok': True}
+                return {'ok': True, 'user': nick_name}
         else:  # should check user in expert team and user is not I
             if len(list_authors) == 1:
                 if nick_name == user_ex_com_name:
                     return {'ok': False, 'cause': 'same_user'}
                 elif is_expert(nick_name):
-                    return {'ok': True}
+                    return {'ok': True, 'user': nick_name}
     return {'ok': False, 'cause': 'answer_user_not_found'}
 
 
-def is_correct_request(url, user_ex_com_id, who_add_ans=None):
-    # get info about user executed the command
-    try:
-        user_ex_com_name = get_display_name(user_ex_com_id).lower().strip()
-    except slack_errors.SlackApiError as e:
-        return {'ok': False, 'cause': 'slack_api_error', 'description': e.response['error']}
-
-    if who_add_ans is None:
-        user_add_ans_name = None
-    else:
-        # find user name added answer
-        reg_ex = re.compile(r'\w+\|\w+')
-        if reg_ex.search(who_add_ans) is None:
-            # param just nickname
-            user_add_ans_name = who_add_ans
-        else:
-            # param is slack nickname (@nickname)
-            try:
-                user_add_ans_name = get_display_name(reg_ex.search(who_add_ans).group().split('|')[0]).lower().strip()
-            except slack_errors.SlackApiError:
-                user_add_ans_name = None
-
-    soup = BeautifulSoup(requests.get(url=url, headers=json.load(open('files/headers.json', 'r'))).text, 'lxml')
+def is_correct_request(url, user_ex_com_name, user_add_ans_name=None):
+    with open('files/headers.json', 'r') as headers_file:
+        text = requests.get(url=url, headers=json.load(headers_file)).text
+        soup = BeautifulSoup(text, 'lxml')
     if soup.find('title').text != 'You have been blocked':
-        try:
-            # Here possible AttributeError exception
-            list_authors = [author_description_tag.find('div').find('span').text.lower().strip()
-                            for author_description_tag
-                            in soup.find_all('div', attrs={'class': 'brn-qpage-next-answer-box-author__description'})]
-            return check_answer(list_authors, user_add_ans_name, user_ex_com_name)
-        except AttributeError:
-            list_authors = [author_description_tag.find_all('div')[1].text
+        list_authors = [author_description_tag.find('div').find('span').text.lower().strip()
+                        for author_description_tag
+                        in soup.find_all('div', attrs={'class': 'brn-qpage-next-answer-box-author__description'})]
+        if not list_authors:
+            list_authors = [author_description_tag.find_all('div')[1].text.lower().strip()
                             for author_description_tag
                             in soup.find_all('div', attrs={'class': 'brn-kodiak-answer__user'})]
-            return check_answer(list_authors, user_add_ans_name, user_ex_com_name)
+        res = check_answer(list_authors, user_ex_com_name, user_add_ans_name)
+        if res['ok']:
+            res['subject'] = soup.find('div', attrs={'class': 'brn-qpage-next-question-box-header__description'}).\
+                find('ul').find('a').text.lower().strip()
+        return res
     else:
         return {'ok': False, 'cause': 'blocked_error'}

@@ -1,7 +1,7 @@
 flask
 gunicorn==19.3.0
 requests
-slackclient
+slackclient==2.8.0
 oauth2client
 gspread
 beautifulsoup4
