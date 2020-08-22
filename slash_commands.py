@@ -47,7 +47,7 @@ def hello():
 @app.route('/get_info', methods=['POST'])
 def get_info():
     req = request.form
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_TEST)
+    client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
     if not is_admin(client, req):
         return reply("You don't have permission")
     check_empty(req)
@@ -89,6 +89,13 @@ def wonderful_answer_background(req):
 
     try:
         user_ex_com_info = get_info_user(req['user_id'])
+        if not user_ex_com_info['user']['profile']['display_name']:
+            ephemeral_message(req['response_url'], f'В вашем профиле не установлен display name.\n'
+                                                   f'Чтобы его установить вам надо <https://prnt.sc/u2t1a6|в этом поле> '
+                                                   f'указать свой ник в znanija.com\n'
+                                                   f'Более подробно о том, как установить display name, вы можете узнать в этой '
+                                                   f'статье: <https://slack.com/intl/en-ru/help/articles/216360827-Change-your-display-name|Change your display name>')
+            return
     except slack_errors.SlackApiError as e:
         ephemeral_message(req['response_url'], f'Ошибка при запросе к Slack API: {e.response}')
         return
