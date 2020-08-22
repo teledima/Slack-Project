@@ -6,14 +6,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 from bs4 import BeautifulSoup
 
 
-class SameUserError(Exception):
-    pass
-
-
-class BlockedError(Exception):
-    pass
-
-
 def authorize():
     return gspread.authorize(ServiceAccountCredentials.
                              from_json_keyfile_name('files/slash-commands-archive-a7072e2bbb96.json',

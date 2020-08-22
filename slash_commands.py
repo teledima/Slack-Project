@@ -129,20 +129,20 @@ def work_with_url(url, user_ex_com_info, user_add_ans_name, response_url):
             ephemeral_message(response_url, f'{url} - Извините, произошла ошибка при проверке ответа. Попробуйте позже')
             return
         elif result['cause'] == 'answer_user_not_found':
-            ephemeral_message(response_url, f'{url} - Ответ пользователя не найден')
+            ephemeral_message(response_url, f'{url} - Ответ пользователя {user_add_ans_name} не найден')
             return
     wonderful_answer_table = znatoks.authorize().open('Copy of Кандидаты').worksheet('wonderful answer')
 
     # find users answered on a question and filter
     user_filter_cells = list(filter(lambda x: x.value == result['user'],
-                                    [wonderful_answer_table.cell(cell.row, cell.col + 2)
+                                    [wonderful_answer_table.cell(cell.row, cell.col + 1)
                                      for cell in wonderful_answer_table.findall(url, in_column=1)]))
     # update 'count' column
     for user in user_filter_cells:
         # get 'count' cell
-        count_cell = wonderful_answer_table.cell(user.row, user.col - 1)
+        count_cell = wonderful_answer_table.cell(user.row, user.col + 2)
         # get cell with user that added this answer
-        user_ex_cell = wonderful_answer_table.cell(user.row, user.col + 2)
+        user_ex_cell = wonderful_answer_table.cell(user.row, user.col + 3)
         # convert cell value to list
         list_user = user_ex_cell.value.split(',')
 
@@ -158,7 +158,8 @@ def work_with_url(url, user_ex_com_info, user_add_ans_name, response_url):
 
     # url with user doesn't exist in the table yet
     if not user_filter_cells:
-        wonderful_answer_table.append_row([url, 1, result['user'], result['subject'], user_ex_com_name])
+        # столбцы таблицы: ссылка, кто дал ответ, предмет, сколько раз ответ выбрали, кто выбрал
+        wonderful_answer_table.append_row([url, result['user'], result['subject'], 1, user_ex_com_name])
     ephemeral_message(response_url, f'{url} - Ответ пользователя {result["user"]} добавлен!')
 
 
