@@ -110,7 +110,9 @@ def wonderful_answer_background(req):
         else:
             # param is slack nickname (@nickname)
             try:
-                user_add_ans_name = get_info_user(reg_ex_user_id.search(who_add_ans).group().split('|')[0]).lower().strip()
+                user_add_ans_name = get_info_user(
+                    reg_ex_user_id.search(who_add_ans).group().split('|')[0]
+                )['user']['profile']['display_name'].lower().strip()
             except slack_errors.SlackApiError:
                 user_add_ans_name = None
 
@@ -131,7 +133,7 @@ def work_with_url(url, user_ex_com_info, user_add_ans_name, response_url):
         elif result['cause'] == 'answer_user_not_found':
             ephemeral_message(response_url, f'{url} - Ответ пользователя {user_add_ans_name} не найден')
             return
-    wonderful_answer_table = znatoks.authorize().open('Copy of Кандидаты').worksheet('wonderful answer')
+    wonderful_answer_table = znatoks.authorize().open('wonderful_answer_test').worksheet('wonderful_answer')
 
     # find users answered on a question and filter
     user_filter_cells = list(filter(lambda x: x.value == result['user'],
