@@ -6,3 +6,4 @@ oauth2client
 gspread
 beautifulsoup4
 lxml==4.5.2
+pytest==6.0.1

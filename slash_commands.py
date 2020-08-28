@@ -99,30 +99,38 @@ def wonderful_answer_background(req):
     except slack_errors.SlackApiError as e:
         ephemeral_message(req['response_url'], f'Ошибка при запросе к Slack API: {e.response}')
         return
-    if who_add_ans is None:
-        user_add_ans_name = None
-    else:
+
+    username_add_ans = None
+    user_add_ans_full_name = None
+    if who_add_ans:
         # find user name added answer
         reg_ex_user_id = re.compile(r'\w+\|\w+')
         if reg_ex_user_id.search(who_add_ans) is None:
             # param just nickname
-            user_add_ans_name = who_add_ans.lower().strip()
+            username_add_ans = who_add_ans.lower().strip()
         else:
             # param is slack nickname (@nickname)
             try:
-                user_add_ans_name = get_info_user(
+                user_add_ans_info = get_info_user(
                     reg_ex_user_id.search(who_add_ans).group().split('|')[0]
-                )['user']['profile']['display_name'].lower().strip()
+                )
+                username_add_ans = user_add_ans_info['user']['profile']['display_name'].lower().strip()
+                user_add_ans_full_name = user_add_ans_info['user']['profile']['real_name'].lower().strip()
             except slack_errors.SlackApiError:
-                user_add_ans_name = None
+                pass
 
     with ThreadPoolExecutor(max_workers=4) as executor:
-        executor.map(work_with_url, urls, [user_ex_com_info]*len(urls), [user_add_ans_name]*len(urls), [req['response_url']]*len(urls))
+        executor.map(work_with_url,
+                     urls,
+                     [user_ex_com_info]*len(urls),
+                     [username_add_ans]*len(urls),
+                     [user_add_ans_full_name]*len(urls),
+                     [req['response_url']]*len(urls))
 
 
-def work_with_url(url, user_ex_com_info, user_add_ans_name, response_url):
+def work_with_url(url, user_ex_com_info, user_add_ans_display_name, user_add_ans_full_name, response_url):
     user_ex_com_name = user_ex_com_info['user']['profile']['display_name'].lower().strip()
-    result = znatoks.is_correct_request(url, user_ex_com_name, user_add_ans_name)
+    result = znatoks.is_correct_request(url, user_ex_com_name, user_add_ans_display_name, user_add_ans_full_name)
     if not result['ok']:
         if result['cause'] == 'same_user':
             ephemeral_message(response_url, f'{url} - Вы не можете отправлять свои ответы')
@@ -131,7 +139,7 @@ def work_with_url(url, user_ex_com_info, user_add_ans_name, response_url):
             ephemeral_message(response_url, f'{url} - Извините, произошла ошибка при проверке ответа. Попробуйте позже')
             return
         elif result['cause'] == 'answer_user_not_found':
-            ephemeral_message(response_url, f'{url} - Ответ пользователя {user_add_ans_name} не найден')
+            ephemeral_message(response_url, f'{url} - Ответ пользователя {user_add_ans_display_name} не найден')
             return
     wonderful_answer_table = znatoks.authorize().open('wonderful_answer_test').worksheet('wonderful_answer')
 

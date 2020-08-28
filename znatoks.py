@@ -50,22 +50,25 @@ def is_expert(nick_name):
     return True
 
 
-def check_answer(list_authors, user_ex_com_name, user_add_ans_name,):
+def check_answer(list_authors, user_ex_com_name, user_add_ans_name, user_add_ans_full_name):
     for nick_name in list_authors:
         # /wonderful_answer url @nick
-        if user_add_ans_name is not None:
-            if nick_name == user_add_ans_name:
-                return {'ok': True, 'user': nick_name}
-        else:  # should check user in expert team and user is not I
-            if len(list_authors) == 1:
-                if nick_name == user_ex_com_name:
-                    return {'ok': False, 'cause': 'same_user'}
-                elif is_expert(nick_name):
+        if user_add_ans_name is not None or user_add_ans_full_name is not None:
+            # check equals whether display name (or nickname without @) or full name with the nickname in znanija.com
+            if user_add_ans_name == user_ex_com_name or user_add_ans_full_name == user_ex_com_name:
+                return {'ok': False, 'cause': 'same_user'}
+            if nick_name == user_add_ans_name or nick_name == user_add_ans_full_name:
+                if is_expert(nick_name):
                     return {'ok': True, 'user': nick_name}
+        if len(list_authors) == 1:
+            if nick_name == user_ex_com_name:
+                return {'ok': False, 'cause': 'same_user'}
+            if user_add_ans_name is None and user_add_ans_full_name is None and is_expert(nick_name):
+                return {'ok': True, 'user': nick_name}
     return {'ok': False, 'cause': 'answer_user_not_found'}
 
 
-def is_correct_request(url, user_ex_com_name, user_add_ans_name=None):
+def is_correct_request(url, user_ex_com_name, user_add_ans_name=None, user_add_ans_full_name=None):
     with open('files/headers.json', 'r') as headers_file:
         text = requests.get(url=url, headers=json.load(headers_file)).text
         soup = BeautifulSoup(text, 'lxml')
@@ -77,10 +80,12 @@ def is_correct_request(url, user_ex_com_name, user_add_ans_name=None):
             list_authors = [author_description_tag.find_all('div')[1].text.lower().strip()
                             for author_description_tag
                             in soup.find_all('div', attrs={'class': 'brn-kodiak-answer__user'})]
-        res = check_answer(list_authors, user_ex_com_name, user_add_ans_name)
+        print(list_authors, user_ex_com_name, user_add_ans_name, user_add_ans_full_name)
+        res = check_answer(list_authors, user_ex_com_name, user_add_ans_name, user_add_ans_full_name)
         if res['ok']:
             res['subject'] = soup.find('div', attrs={'class': 'brn-qpage-next-question-box-header__description'}).\
                 find('ul').find('a').text.lower().strip()
+        print(res)
         return res
     else:
         return {'ok': False, 'cause': 'blocked_error'}
