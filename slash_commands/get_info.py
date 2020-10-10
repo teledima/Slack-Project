@@ -1,18 +1,20 @@
-from main_file import app
 from functions_slack import check_empty, is_admin, reply, ephemeral_message
 from slack import WebClient
 from tasks import async_task
 from slack.web.classes import blocks
-from flask import request
+from flask import Blueprint, request
 import constants
 import znatoks
 
 
-@app.route('/get_info', methods=['POST'])
+get_info_blueprint = Blueprint('get_info', __name__)
+
+
+@get_info_blueprint.route('/get_info', methods=['POST'])
 def get_info():
     req = request.form
     client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
-    if not is_admin(client, req):
+    if not is_admin(client, req['user_id']):
         return reply("You don't have permission")
     check_empty(req)
     get_info_background(request.form)

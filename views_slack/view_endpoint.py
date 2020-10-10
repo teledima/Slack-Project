@@ -1,13 +1,15 @@
 from tasks import async_task
-from main_file import app
-from flask import request, make_response
+from flask import Blueprint, request, make_response
 from slack import WebClient
 import slack.errors as slack_errors
 import constants
 import json
 
 
-@app.route('/entry_point', methods=["POST"])
+views_endpoint = Blueprint('views-endpoint', __name__)
+
+
+@views_endpoint.route('/views-endpoint', methods=["POST"])
 def entry_point():
     payload = json.loads(request.form['payload'])
     client = WebClient(token=constants.SLACK_OAUTH_TOKEN)

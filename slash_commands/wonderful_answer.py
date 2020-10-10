@@ -1,32 +1,37 @@
-from concurrent.futures.thread import ThreadPoolExecutor
-from flask import request, make_response
-from tasks import async_task
-from functions_slack import check_empty, reply, ephemeral_message, get_info_user
-from main_file import app
-import slack.errors as slack_errors
 import re
+from concurrent.futures.thread import ThreadPoolExecutor
+
+import slack.errors as slack_errors
+from slack import WebClient
+from flask import Blueprint, request, make_response
+
 import znatoks
 import constants
+from functions_slack import check_empty, reply, ephemeral_message, is_admin
+from tasks import async_task
+
+wonderful_answer_blueprint = Blueprint('wonderful_answer', __name__)
 
 
-@app.route('/wonderful_answer', methods=['POST', 'GET'])
+@wonderful_answer_blueprint.route('/wonderful_answer', methods=['POST', 'GET'])
 def wonderful_answer():
     req = request.form
+    client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
     if check_empty(req):
         return make_response('', 200)
-    wonderful_answer_background(req)
+    wonderful_answer_background(client, req)
     return reply('Привет! Подождите секунду, бот заносит ссылку/ссылки в таблицу')
 
 
 @async_task
-def wonderful_answer_background(req):
+def wonderful_answer_background(client, req):
     urls = set([url.strip('<>') for url in re.findall(r'https:\/\/znanija\.com\/task\/\w+', req['text'])])
     *_, last_word = req['text'].split()
     reg_ex_slack_nickname = re.search(r'(^<@\w+\|\w+>$|^\w+$)', last_word)
     who_add_ans = None if reg_ex_slack_nickname is None else reg_ex_slack_nickname.group()
 
     try:
-        user_ex_com_info = get_info_user(req['user_id'])
+        user_ex_com_info = client.users_info(user=req['user_id'])
         if not user_ex_com_info['user']['profile']['display_name']:
             ephemeral_message(req['response_url'], f'В вашем профиле не установлен display name.\n'
                                                    f'Чтобы его установить вам надо <https://prnt.sc/u2t1a6|в этом поле> '
@@ -49,9 +54,7 @@ def wonderful_answer_background(req):
         else:
             # param is slack nickname (@nickname)
             try:
-                user_add_ans_info = get_info_user(
-                    reg_ex_user_id.search(who_add_ans).group().split('|')[0]
-                )
+                user_add_ans_info = client.users_info(user=reg_ex_user_id.search(who_add_ans).group().split('|')[0])
                 username_add_ans = user_add_ans_info['user']['profile']['display_name'].lower().strip()
                 user_add_ans_full_name = user_add_ans_info['user']['profile']['real_name'].lower().strip()
             except slack_errors.SlackApiError:
@@ -59,6 +62,7 @@ def wonderful_answer_background(req):
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         executor.map(work_with_url,
+                     [client]*len(urls),
                      urls,
                      [user_ex_com_info]*len(urls),
                      [username_add_ans]*len(urls),
@@ -66,7 +70,7 @@ def wonderful_answer_background(req):
                      [req['response_url']]*len(urls))
 
 
-def work_with_url(url, user_ex_com_info, user_add_ans_display_name, user_add_ans_full_name, response_url):
+def work_with_url(client, url, user_ex_com_info, user_add_ans_display_name, user_add_ans_full_name, response_url):
     user_ex_com_name = user_ex_com_info['user']['profile']['display_name'].lower().strip()
     result = znatoks.is_correct_request(url, user_ex_com_name, user_add_ans_display_name, user_add_ans_full_name)
     if not result['ok']:
@@ -87,16 +91,12 @@ def work_with_url(url, user_ex_com_info, user_add_ans_display_name, user_add_ans
                                      for cell in wonderful_answer_table.findall(url, in_column=1)]))
     # update 'count' column
     for user in user_filter_cells:
-        # get 'count' cell
-        count_cell = wonderful_answer_table.cell(user.row, user.col + 2)
         # get cell with user that added this answer
         user_ex_cell = wonderful_answer_table.cell(user.row, user.col + 3)
         # convert cell value to list
         list_user = user_ex_cell.value.split(',')
 
-        if user_ex_com_name not in list_user or\
-                user_ex_com_info['user']['is_admin'] or user_ex_com_info['user']['id'] in constants.WHITE_LIST:
-            wonderful_answer_table.update_cell(count_cell.row, count_cell.col, int(count_cell.value) + 1)
+        if user_ex_com_name not in list_user or is_admin(client, user_ex_com_info['user']['id']):
             if user_ex_com_name not in list_user:
                 list_user.append(user_ex_com_name)
                 wonderful_answer_table.update_cell(user_ex_cell.row, user_ex_cell.col, ','.join(list_user))
