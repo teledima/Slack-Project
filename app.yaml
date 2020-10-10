@@ -1,2 +1,2 @@
 runtime: python38
-entrypoint: gunicorn -b :8080 slash_commands:app
+entrypoint: gunicorn -b :8080 main_file:app
