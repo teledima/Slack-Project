@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="RU-ru">
+<head>
+    <meta charset="utf-8">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
+    <title>Команды LaTeX</title>
+    <link href="../latex_page/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link href="latex_page.css" rel="stylesheet">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="../latex_page/assets/js/bootstrap.bundle.min.js"></script>
+
+</head>
+<body>
+<nav class="navbar navbar-expand-sm justify-content-between navbar-dark bg-dark">
+
+    <!-- Links -->
+    <ul class="navbar-nav">
+        <li class="navbar-brand">
+            <a href="#">Home</a>
+        </li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Dropdown</a>
+            <div class="dropdown-menu" aria-labelledby="dropdown01">
+                <a class="dropdown-item" href="#">Action</a>
+                <a class="dropdown-item" href="#">Another action</a>
+                <a class="dropdown-item" href="#">Something else here</a>
+            </div>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#">Список поддерживаемых символов</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#">Примеры</a>
+        </li>
+    </ul>
+
+    <form class="form-inline">
+        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+    </form>
+
+</nav>
+<div class="jumbotron vertical-center">
+    <div class="container">
+        <p class="lead">Этот сайт предназначен для освоения встроенного редактора формул, который использует язык разметки LaTex
+                <br>Сайт состоит из нескольких разделов:</p>
+        <div class="list-group">
+            <a href="#">Обучение</a>
+            <p>В данном разделе будут рассмотрены основные возможности LaTeX, такие как дроби, корни, системы уравнений,
+                интегралы и другие наиболее часто встречающиееся математические операции и интсрументы.</p>
+            <a href="#">Список поддерживаемых символов</a>
+            <p>Здесь будут приведены различные символы, поддерживаемые LaTeX и встроенным редактором формул.
+            Среди них символы различных математических операций, отношений, а также здесь будет приведён греческий алфавит</p>
+            <a href="#">Примеры</a>
+            <p>Этот раздел посвящён разбору некоторых формул и некоторых тонкостей в использовании LaTeX</p>
+    </div>
+</div>
+</body>
+</html>
