@@ -1,74 +1,12 @@
-import constants
-import requests
-import json
-import znatoks
-import re
-from concurrent.futures import ThreadPoolExecutor
-from flask import Flask, request, make_response, jsonify
-from slack.web.classes import blocks
-from slack.web.client import WebClient
-import slack.errors as slack_errors
+from concurrent.futures.thread import ThreadPoolExecutor
+from flask import request, make_response
 from tasks import async_task
-
-app = Flask(__name__)
-
-
-def ephemeral_message(response_url, text=None, blocks=None):
-    requests.post(response_url, data=json.dumps({'content_type': 'ephemeral', 'text': text, 'blocks': blocks}))
-
-
-def reply(text: str):
-    return jsonify(
-        content_type='ephemeral',
-        text=text
-    )
-
-
-def is_admin(client, req):
-    user_info_resp = client.users_info(user=req['user_id'])
-    if user_info_resp['user']['is_admin'] or user_info_resp['user']['id'] in constants.WHITE_LIST:
-        return True
-    else:
-        return False
-
-
-def check_empty(req):
-    if not req['text']:
-        ephemeral_message(req['response_url'], "Запрос пустой")
-        return True
-    return False
-
-
-@app.route('/')
-def hello():
-    return "Hello, Slack App!"
-
-
-@app.route('/get_info', methods=['POST'])
-def get_info():
-    req = request.form
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
-    if not is_admin(client, req):
-        return reply("You don't have permission")
-    check_empty(req)
-    get_info_background(request.form)
-    return reply('Got it!')
-
-
-@async_task
-def get_info_background(req):
-    info = znatoks.find_user_spreadsheet(req['text'])
-    if all(i is None for i in info):
-        ephemeral_message(req['response_url'], 'User is not found')
-        return
-    sections = []
-    for row in info:
-        if row is not None:
-            for key in row.keys():
-                sections.append(
-                    blocks.SectionBlock(text=blocks.TextObject(f'_*{key}*_: {row[key]}', 'mrkdwn')).to_dict())
-            sections.append(blocks.DividerBlock().to_dict())
-    ephemeral_message(req['response_url'], blocks=sections)
+from functions_slack import check_empty, reply, ephemeral_message, get_info_user
+from main_file import app
+import slack.errors as slack_errors
+import re
+import znatoks
+import constants
 
 
 @app.route('/wonderful_answer', methods=['POST', 'GET'])
@@ -171,54 +109,3 @@ def work_with_url(url, user_ex_com_info, user_add_ans_display_name, user_add_ans
         # столбцы таблицы: ссылка, кто дал ответ, предмет, сколько раз ответ выбрали, кто выбрал
         wonderful_answer_table.append_row([url, result['user'], result['subject'], 1, user_ex_com_name])
     ephemeral_message(response_url, f'{url} - Ответ пользователя {result["user"]} добавлен!')
-
-
-@app.route('/entry_point', methods=["POST"])
-def entry_point():
-    payload = json.loads(request.form['payload'])
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
-    if payload['type'] == 'shortcut':
-        try:
-            client.views_open(trigger_id=payload['trigger_id'], view=get_view('files/validate_form.json'))
-            return make_response('', 200)
-        except slack_errors.SlackApiError as e:
-            code = e.response["error"]
-            return make_response(f"Failed to open a modal due to {code}", 200)
-    elif payload['type'] == 'block_actions':
-        if payload['view']['callback_id'] == 'valid_form':
-            value = payload['actions'][0]['selected_option']['value']
-            client.views_update(view=get_view(f'files/form_add_{value}.json'), view_id=payload['view']['id'])
-    elif payload['type'] == 'view_submission':
-        if payload['view']['callback_id'] == 'expert_form':
-            form_expert_submit(client, payload)
-        elif payload['view']['callback_id'] == 'candidate_form':
-            form_candidate_submit(client, payload)
-        return make_response('', 200)
-
-    return make_response('', 404)
-
-
-@async_task
-def form_candidate_submit(client, payload):
-    user_info = {'profile': None, 'nick': None, 'name': None,
-                 'statuses': None, 'tutor': None, 'subject': None, 'happy_birthday': None, 'is_auto_check': False}
-    pass
-
-
-@async_task
-def form_expert_submit(client, payload):
-    pass
-
-
-def get_view(filename):
-    with open(filename, 'r', encoding='utf-8') as form_file:
-        return json.load(form_file)
-
-
-def get_info_user(user_id):
-    try:
-        info = WebClient(token=constants.SLACK_OAUTH_TOKEN).users_info(user=user_id).data
-        if info['ok']:
-            return info
-    except slack_errors.SlackApiError as e:
-        raise e

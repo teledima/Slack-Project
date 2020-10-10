@@ -22,7 +22,7 @@ def next_available_row(worksheet):
 
 def find_user_spreadsheet(url):
     client = authorize()
-    spreadsheet = client.open('Copy of Кандидаты')
+    spreadsheet = client.open('Кандидаты(версия 2)')
     tables_list = ['кандидаты', 'команда знатоков']
     return [find_in_table(spreadsheet.worksheet(table), url) for table in tables_list]
 
@@ -80,12 +80,10 @@ def is_correct_request(url, user_ex_com_name, user_add_ans_name=None, user_add_a
             list_authors = [author_description_tag.find_all('div')[1].text.lower().strip()
                             for author_description_tag
                             in soup.find_all('div', attrs={'class': 'brn-kodiak-answer__user'})]
-        print(list_authors, user_ex_com_name, user_add_ans_name, user_add_ans_full_name)
         res = check_answer(list_authors, user_ex_com_name, user_add_ans_name, user_add_ans_full_name)
         if res['ok']:
             res['subject'] = soup.find('div', attrs={'class': 'brn-qpage-next-question-box-header__description'}).\
                 find('ul').find('a').text.lower().strip()
-        print(res)
         return res
     else:
         return {'ok': False, 'cause': 'blocked_error'}
