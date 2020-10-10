@@ -101,11 +101,11 @@ def work_with_url(client, url, user_ex_com_info, user_add_ans_display_name, user
                 list_user.append(user_ex_com_name)
                 wonderful_answer_table.update_cell(user_ex_cell.row, user_ex_cell.col, ','.join(list_user))
         else:
-            ephemeral_message(response_url, f'{url} - Вы не можете два раза добавить один и тот же ответ.')
+            ephemeral_message(response_url, f'{url} - Вы уже добавляли этот ответ.')
             return
 
     # url with user doesn't exist in the table yet
     if not user_filter_cells:
         # столбцы таблицы: ссылка, кто дал ответ, предмет, сколько раз ответ выбрали, кто выбрал
-        wonderful_answer_table.append_row([url, result['user'], result['subject'], 1, user_ex_com_name])
+        wonderful_answer_table.append_row([url, result['user'], result['subject'], user_ex_com_name])
     ephemeral_message(response_url, f'{url} - Ответ пользователя {result["user"]} добавлен!')
