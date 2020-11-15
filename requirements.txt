@@ -1,7 +1,9 @@
+pytz
+slackeventsapi
 flask
 gunicorn==19.3.0
 requests
-slackclient==2.8.0
+slack-sdk
 oauth2client
 gspread
 beautifulsoup4

@@ -2,7 +2,7 @@ import requests
 import json
 import constants
 from flask import jsonify
-from slack import WebClient
+from slack_sdk.web import WebClient
 
 
 def is_admin(client: WebClient, user_id):

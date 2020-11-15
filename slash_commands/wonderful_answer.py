@@ -1,8 +1,8 @@
 import re
 from concurrent.futures.thread import ThreadPoolExecutor
 
-import slack.errors as slack_errors
-from slack import WebClient
+import slack_sdk.errors as slack_errors
+from slack_sdk.web import WebClient
 from flask import Blueprint, request, make_response
 
 import znatoks

@@ -1,6 +1,6 @@
 from main_file import app
 from flask import request, make_response
-from slack import WebClient
+from slack_sdk.web import WebClient
 import constants
 from functions_slack import ephemeral_message
 from tasks import async_task

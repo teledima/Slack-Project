@@ -1,7 +1,7 @@
 from functions_slack import check_empty, is_admin, reply, ephemeral_message
-from slack import WebClient
+from slack_sdk.web import WebClient
 from tasks import async_task
-from slack.web.classes import blocks
+from slack_sdk.models import blocks
 from flask import Blueprint, request
 import constants
 import znatoks

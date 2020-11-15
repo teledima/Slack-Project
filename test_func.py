@@ -1,4 +1,3 @@
-import pytest
 from znatoks import check_answer
 
 executor = 'teledima00'
