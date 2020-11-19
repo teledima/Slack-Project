@@ -67,3 +67,4 @@ def reaction_added(event_data):
         conn.execute('insert into events_history(link, nickname, smile, event_time)'
                      'values (:link, :nickname, :smile, :event_time)',
                      {"link": link, "nickname": expert_name, "smile": emoji, "event_time": current_timestamp})
+        conn.commit()
