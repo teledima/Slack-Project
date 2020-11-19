@@ -49,9 +49,10 @@ def reaction_added(event_data):
                                         text=f"See your message {response['messages'][0]['text']}")
     else:
         link = None
-        expert_name = conn.execute('select expert_name from smiles where name = :name', {"name": emoji}).fetchone()[0]
+        expert_name = conn.execute('select expert_name from smiles where name = :name', {"name": emoji}).fetchone()
         current_timestamp = datetime.now(pytz.timezone('Europe/Moscow')).strftime('%m/%d/%Y %H:%M:%S')
         if expert_name:
+            expert_name = expert_name[0]
             try:
                 # find link in attachments
                 if response['messages']:
