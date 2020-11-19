@@ -43,15 +43,15 @@ def reaction_added(event_data):
         res = conn.execute('select send_notifications from white_list where user_id = :user_id',
                            {"user_id": event_data['event']['item_user']}).fetchone()
         if res and bool(res[0]) is True:
-            print('send notifications')
             client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
             if response['ok']:
                 client.chat_postMessage(channel=event_data['event']['item_user'],
                                         text=f"See your message {response['messages'][0]['text']}")
     else:
+        link = None
         expert_name = conn.execute('select expert_name from smiles where name = :name', {"name": emoji}).fetchone()[0]
+        current_timestamp = datetime.now(pytz.timezone('Europe/Moscow')).strftime('%m/%d/%Y %H:%M:%S')
         if expert_name:
-            link = None
             try:
                 # find link in attachments
                 if response['messages']:
@@ -62,5 +62,7 @@ def reaction_added(event_data):
             if expert_name.lower() in get_answered_users(link):
                 client = authorize()
                 spreadsheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
-                spreadsheet.append_row([datetime.now(pytz.timezone('Europe/Moscow')).strftime('%m/%d/%Y %H:%M:%S'),
-                                        'решение', expert_name, link])
+                spreadsheet.append_row([current_timestamp, 'решение', expert_name, link])
+        conn.execute('insert into events_history(link, nickname, smile, event_time)'
+                     'values (:link, :nickname, :smile, :event_time)',
+                     {"link": link, "nickname": expert_name, "smile": emoji, "event_time": current_timestamp})
