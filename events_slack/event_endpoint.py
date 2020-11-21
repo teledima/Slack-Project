@@ -8,6 +8,8 @@ import sqlite3
 import json
 import pytz
 from datetime import datetime
+
+from events_slack.expert_name_not_found import ExpertNameNotFound
 from znatoks import authorize
 
 
@@ -50,8 +52,8 @@ def reaction_added(event_data):
     else:
         link = None
         expert_name = conn.execute('select expert_name from smiles where name = :name', {"name": emoji}).fetchone()
-        current_timestamp = datetime.now(pytz.timezone('Europe/Moscow')).strftime('%m/%d/%Y %H:%M:%S')
-        if expert_name:
+        current_timestamp = datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S')
+        try:
             expert_name = expert_name[0]
             try:
                 # find link in attachments
@@ -59,12 +61,14 @@ def reaction_added(event_data):
                     link = response['messages'][0]['attachments'][0]['title_link']
             except KeyError:
                 # TODO: find link in text
+                raise KeyError('Ссылка в проверке не найдена')
                 return
             if expert_name.lower() in get_answered_users(link):
                 client = authorize()
                 spreadsheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
                 spreadsheet.append_row([current_timestamp, 'решение', expert_name, link])
-        conn.execute('insert into events_history(link, nickname, smile, event_time)'
-                     'values (:link, :nickname, :smile, :event_time)',
-                     {"link": link, "nickname": expert_name, "smile": emoji, "event_time": current_timestamp})
-        conn.commit()
+        except TypeError:
+            if not expert_name:
+                raise ExpertNameNotFound(f'Ник пользователя со смайлом {emoji} отсутствует в базе данных')
+            else:
+                raise TypeError
