@@ -9,7 +9,7 @@ import json
 import pytz
 from datetime import datetime
 
-from events_slack.expert_name_not_found import ExpertNameNotFound
+from events_slack.expert_errors import *
 from znatoks import authorize
 
 
@@ -22,11 +22,11 @@ def get_answered_users(link):
     request = requests.get(link, json.load(open('files/headers.json', 'r')))
     if request.status_code == 200:
         beautiful_soup = BeautifulSoup(request.text, 'lxml')
-        return [div_el.span.text.replace('\n', '').lower()
-                for div_el
-                in beautiful_soup.find_all('div', {'class': "brn-qpage-next-answer-box-author__description"})]
+        return dict(ok=True, users=[div_el.span.text.replace('\n', '').lower()
+                                    for div_el
+                                    in beautiful_soup.find_all('div', {'class': "brn-qpage-next-answer-box-author__description"})])
     else:
-        return []
+        return dict(ok=False, users=[])
 
 
 def get_last_message_by_ts(channel, ts):
@@ -62,11 +62,15 @@ def reaction_added(event_data):
             except KeyError:
                 # TODO: find link in text
                 raise KeyError('Ссылка в проверке не найдена')
-                return
-            if expert_name.lower() in get_answered_users(link):
-                client = authorize()
-                spreadsheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
+            answered_users = get_answered_users(link)
+            client = authorize()
+            spreadsheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
+            if answered_users['ok'] and expert_name.lower() in answered_users['users']:
                 spreadsheet.append_row([current_timestamp, 'решение', expert_name, link])
+            elif answered_users['ok'] == False:
+                spreadsheet.append_row([current_timestamp, 'решение', expert_name, link, '?'])
+            else:
+                raise SmileExistsButUserHasNotAnswer(f'Смайл "{emoji}" существует но пользователь, который к нему привязан не отвечал на данный вопрос. Пользатель, к которому привязан смайл: {expert_name}. Пользователи, ответившие на вопрос "{link}": {answered_users}')
         except TypeError:
             if not expert_name:
                 raise ExpertNameNotFound(f'Ник пользователя со смайлом {emoji} отсутствует в базе данных')
