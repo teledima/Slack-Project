@@ -19,7 +19,7 @@ slack_event_adapter = SlackEventAdapter(constants.SLACK_SIGNING_SECRET, endpoint
 
 
 def get_answered_users(link):
-    request = requests.get(link, json.load(open('files/headers.json', 'r')))
+    request = requests.get(link)
     if request.status_code == 200:
         beautiful_soup = BeautifulSoup(request.text, 'lxml')
         return dict(ok=True, users=[div_el.span.text.replace('\n', '').lower()
