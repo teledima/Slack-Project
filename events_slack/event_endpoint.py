@@ -3,30 +3,34 @@ from slackeventsapi import SlackEventAdapter
 from slack_sdk.web import WebClient
 from bs4 import BeautifulSoup
 import constants
-import requests
 import sqlite3
-import json
 import pytz
 from datetime import datetime
+import cfscrape
 
 from events_slack.expert_errors import *
 from znatoks import authorize
-
+from core import limiter
 
 event_endpoint_blueprint = Blueprint('event_endpoint', __name__)
 slack_event_adapter = SlackEventAdapter(constants.SLACK_SIGNING_SECRET, endpoint='/event_endpoint',
                                         server=event_endpoint_blueprint)
 
+limiter.limit("1 per 5 seconds")(event_endpoint_blueprint)
+
 
 def get_answered_users(link):
-    request = requests.get(link)
+    scraper = cfscrape.create_scraper()
+    request = scraper.get(link)
     if request.status_code == 200:
-        beautiful_soup = BeautifulSoup(request.text, 'lxml')
-        return dict(ok=True, users=[div_el.span.text.replace('\n', '').lower()
-                                    for div_el
-                                    in beautiful_soup.find_all('div', {'class': "brn-qpage-next-answer-box-author__description"})])
+        beautiful_soup = BeautifulSoup(request.content, 'lxml')
+        return dict(ok=True,
+                    users=[div_el.span.text.replace('\n', '').lower()
+                           for div_el
+                           in beautiful_soup.find_all('div',
+                                                      {'class': "brn-qpage-next-answer-box-author__description"})])
     else:
-        return dict(ok=False, users=[])
+        return dict(ok=False, users=[], error_code=request.status_code)
 
 
 def get_last_message_by_ts(channel, ts):
@@ -67,7 +71,7 @@ def reaction_added(event_data):
             spreadsheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
             if answered_users['ok'] and expert_name.lower() in answered_users['users']:
                 spreadsheet.append_row([current_timestamp, 'решение', expert_name, link])
-            elif answered_users['ok'] == False:
+            elif not answered_users['ok']:
                 spreadsheet.append_row([current_timestamp, 'решение', expert_name, link, '?'])
             else:
                 raise SmileExistsButUserHasNotAnswer(f'Смайл "{emoji}" существует но пользователь, который к нему привязан не отвечал на данный вопрос. Пользатель, к которому привязан смайл: {expert_name}. Пользователи, ответившие на вопрос "{link}": {answered_users}')
