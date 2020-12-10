@@ -6,9 +6,9 @@ from slack_sdk.web import WebClient
 from flask import Blueprint, request, make_response
 
 import znatoks
-import constants
-from functions_slack import check_empty, reply, ephemeral_message, is_admin
-from tasks import async_task
+from slack_core import constants
+from slack_core.functions_slack import check_empty, reply, ephemeral_message, is_admin
+from slack_core.tasks import async_task
 
 wonderful_answer_blueprint = Blueprint('wonderful_answer', __name__)
 

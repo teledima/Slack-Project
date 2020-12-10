@@ -1,8 +1,8 @@
-from tasks import async_task
+from slack_core.tasks import async_task
 from flask import Blueprint, request, make_response
 from slack_sdk.web import WebClient
 import slack_sdk.errors as slack_errors
-import constants
+from slack_core import constants
 import json
 
 

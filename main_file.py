@@ -3,7 +3,7 @@ from slash_commands.wonderful_answer import wonderful_answer_blueprint
 from slash_commands.get_info import get_info_blueprint
 from views_slack.view_endpoint import views_endpoint_blueprint
 from events_slack.event_endpoint import event_endpoint_blueprint
-from core import limiter
+from slack_core.limiter import limiter
 
 
 app = Flask(__name__)

@@ -2,7 +2,7 @@ from flask import Blueprint
 from slackeventsapi import SlackEventAdapter
 from slack_sdk.web import WebClient
 from bs4 import BeautifulSoup
-import constants
+from slack_core import constants
 import sqlite3
 import pytz
 from datetime import datetime
@@ -10,7 +10,7 @@ import cfscrape
 
 from events_slack.expert_errors import *
 from znatoks import authorize
-from core import limiter
+from slack_core.limiter import limiter
 
 event_endpoint_blueprint = Blueprint('event_endpoint', __name__)
 slack_event_adapter = SlackEventAdapter(constants.SLACK_SIGNING_SECRET, endpoint='/event_endpoint',

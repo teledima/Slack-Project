@@ -1,9 +1,9 @@
 from main_file import app
 from flask import request, make_response
 from slack_sdk.web import WebClient
-import constants
-from functions_slack import ephemeral_message
-from tasks import async_task
+from slack_core import constants
+from slack_core.functions_slack import ephemeral_message
+from slack_core.tasks import async_task
 
 
 @app.route('/resent_messages', methods=["POST"])

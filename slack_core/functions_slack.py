@@ -1,6 +1,6 @@
 import requests
 import json
-import constants
+from slack_core import constants
 from flask import jsonify
 from slack_sdk.web import WebClient
 
