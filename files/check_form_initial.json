@@ -1,0 +1,30 @@
+{
+	"callback_id": "send_check_form",
+	"title": {
+		"type": "plain_text",
+		"text": "Форма для проверки",
+		"emoji": true
+	},
+	"submit": {
+		"type": "plain_text",
+		"text": "Отправить проверку",
+		"emoji": true
+	},
+	"type": "modal",
+	"blocks": [
+		{
+			"dispatch_action": true,
+			"type": "input",
+			"block_id": "link_id",
+			"element": {
+				"type": "plain_text_input",
+				"action_id": "input_link_action_id"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Введите ссылку на вопрос",
+				"emoji": true
+			}
+		}
+	]
+}

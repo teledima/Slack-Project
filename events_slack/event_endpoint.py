@@ -1,13 +1,11 @@
 from flask import Blueprint
 from slackeventsapi import SlackEventAdapter
 from slack_sdk.web import WebClient
-from bs4 import BeautifulSoup
 from slack_core import constants
 import sqlite3
 import pytz
 from datetime import datetime
-import cfscrape
-
+from brainly_pack import get_answered_users
 from events_slack.expert_errors import *
 from znatoks import authorize
 from slack_core.limiter import limiter
@@ -17,20 +15,6 @@ slack_event_adapter = SlackEventAdapter(constants.SLACK_SIGNING_SECRET, endpoint
                                         server=event_endpoint_blueprint)
 
 limiter.limit("1 per 5 seconds")(event_endpoint_blueprint)
-
-
-def get_answered_users(link):
-    scraper = cfscrape.create_scraper()
-    request = scraper.get(link)
-    if request.status_code == 200:
-        beautiful_soup = BeautifulSoup(request.content, 'lxml')
-        return dict(ok=True,
-                    users=[div_el.span.text.replace('\n', '').lower()
-                           for div_el
-                           in beautiful_soup.find_all('div',
-                                                      {'class': "brn-qpage-next-answer-box-author__description"})])
-    else:
-        return dict(ok=False, users=[], error_code=request.status_code)
 
 
 def get_last_message_by_ts(channel, ts):
