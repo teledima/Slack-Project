@@ -39,19 +39,21 @@ def entry_point():
             # проверить введёную ссылку
             link = payload['actions'][0]['value']
             if re.search(r'https://znanija\.com/task/[0-9/]+$', link):
-                # получить ответы
-                answers = get_task_info(link)
-                # проверить, даны ли ответы
-                if answers:
+                # получить информацию о задаче
+                task_info = get_task_info(link)
+                # проверить, получилось ли запросить информацию о задаче
+                if task_info['ok']:
                     # получить исходную форму
                     view = get_view('files/check_form_initial.json')
                     # вставить ответы в форму
-                    for i in range(0, len(answers)):
-                        view['blocks'].append(SectionBlock(text=answers[i], block_id=f'answer_{i}_id', type='plain_text').to_dict())
+                    for i in range(0, len(task_info['answered_users'])):
+                        view['blocks'].append(SectionBlock(text=task_info['answered_users'][i]['text'],
+                                                           block_id=f'answer_{i}_id',
+                                                           type='plain_text').to_dict())
                     view['blocks'].append(InputBlock(label=PlainTextObject(text='Введите ваш вердикт'),
                                                      element=InputInteractiveElement(type='plain_text_input',
                                                                                      action_id='verdict_id',
-                                                                                     placeholder=PlainTextObject(text='Полное верное решение, копия или есть ошибки'),
+                                                                                     placeholder=PlainTextObject(text='Полное верное решение, копия или есть ошибки?'),
                                                                                      multiline=True),
                                                      optional=True,
                                                      block_id='verdict_input_id').to_dict())
@@ -86,7 +88,6 @@ def form_expert_submit(client, payload):
 def form_check_submit(payload):
     user = payload['user']['username']
     link = payload['view']['state']['values']['link_id']['input_link_action_id']['value']
-    print(user, link)
     client_spreadsheet = authorize()
     sheet = client_spreadsheet.open('Кандидаты(версия 2)').worksheet('test_list')
     sheet.append_row([datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S'), 'проверка', user, link])
