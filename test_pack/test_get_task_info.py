@@ -18,7 +18,7 @@ class TestGetTaskInfo:
                 and task_info['subject'] == 'Математика'
                 and len(task_info['answered_users']) == 1
                 and task_info['answered_users'][0]['user'] == 'shushkasmol'
-                and task_info['answered_users'][0]['text'] is not None)
+                and isinstance(task_info['answered_users'][0]['text'], str))
 
     def test_two_answers(self):
         link = 'https://znanija.com/task/30955562'
@@ -28,8 +28,8 @@ class TestGetTaskInfo:
                 and task_info['subject'] == 'Математика'
                 and len(task_info['answered_users']) == 2
                 and set([answer['user'] for answer in task_info['answered_users']]).issubset(['maymr', 'Участник Знаний'])
-                and task_info['answered_users'][0]['text'] is not None
-                and task_info['answered_users'][1]['text'] is not None)
+                and isinstance(task_info['answered_users'][0]['text'], str)
+                and isinstance(task_info['answered_users'][1]['text'], str))
 
     def test_one_accepted_answer(self):
         link = 'https://znanija.com/task/9998689'
@@ -39,7 +39,7 @@ class TestGetTaskInfo:
                 and task_info['subject'] == 'Геометрия'
                 and len(task_info['answered_users']) == 1
                 and task_info['answered_users'][0]['user'] == 'teledima00'
-                and task_info['answered_users'][0]['text'] is not None)
+                and isinstance(task_info['answered_users'][0]['text'], str))
 
     def test_two_accepted_answers(self):
         link = 'https://znanija.com/task/1092020'
@@ -49,8 +49,8 @@ class TestGetTaskInfo:
                 and task_info['subject'] == 'Алгебра'
                 and len(task_info['answered_users']) == 2
                 and set([answer['user'] for answer in task_info['answered_users']]).issubset(['axatar', 'rumanezzo'])
-                and task_info['answered_users'][0]['text'] is not None
-                and task_info['answered_users'][1]['text'] is not None)
+                and isinstance(task_info['answered_users'][0]['text'], str)
+                and isinstance(task_info['answered_users'][1]['text'], str))
 
     def test_deleted_task(self):
         link = 'https://znanija.com/task/6644554'
