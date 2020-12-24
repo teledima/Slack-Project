@@ -13,7 +13,7 @@ get_info_blueprint = Blueprint('get_info', __name__)
 @get_info_blueprint.route('/get_info', methods=['POST'])
 def get_info():
     req = request.form
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
+    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     if not is_admin(client, req['user_id']):
         return reply("You don't have permission")
     check_empty(req)

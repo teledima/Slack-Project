@@ -5,8 +5,9 @@ from flask import Blueprint, request, make_response
 from slack_sdk.web import WebClient
 import slack_sdk.errors as slack_errors
 from slack_core import constants
-from slack_sdk.models.blocks import SectionBlock, InputBlock, InputInteractiveElement
+from slack_sdk.models.blocks import SectionBlock, InputBlock, InputInteractiveElement, DividerBlock
 from slack_sdk.models.views import PlainTextObject
+from slack_sdk.models.attachments import Attachment
 from datetime import datetime
 import json
 import re
@@ -20,7 +21,7 @@ views_endpoint_blueprint = Blueprint('views_endpoint', __name__)
 @views_endpoint_blueprint.route('/views-endpoint', methods=["POST"])
 def entry_point():
     payload = json.loads(request.form['payload'])
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
+    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     if payload['type'] == 'shortcut':
         try:
             if payload['callback_id'] == 'send_check_form':
@@ -41,10 +42,13 @@ def entry_point():
             if re.search(r'https://znanija\.com/task/[0-9/]+$', link):
                 # получить информацию о задаче
                 task_info = get_task_info(link)
+                print(task_info)
                 # проверить, получилось ли запросить информацию о задаче
                 if task_info['ok']:
                     # получить исходную форму
                     view = get_view('files/check_form_initial.json')
+                    view['blocks'].append(SectionBlock(text=task_info['question'], block_id='question_id').to_dict())
+                    view['blocks'].append(DividerBlock().to_dict())
                     # вставить ответы в форму
                     for i in range(0, len(task_info['answered_users'])):
                         view['blocks'].append(SectionBlock(text=task_info['answered_users'][i]['text'],
@@ -57,6 +61,7 @@ def entry_point():
                                                                                      multiline=True),
                                                      optional=True,
                                                      block_id='verdict_input_id').to_dict())
+                    view['private_metadata'] = json.dumps(task_info['subject'])
                     # обновить форму
                     client.views_update(view=view, view_id=payload['view']['id'])
         return make_response('', 200)
@@ -67,7 +72,20 @@ def entry_point():
         elif payload['view']['callback_id'] == 'candidate_form':
             form_candidate_submit(client, payload)
         elif payload['view']['callback_id'] == 'send_check_form':
-            form_check_submit(payload)
+            user = payload['user']['username']
+            link = payload['view']['state']['values']['link_id']['input_link_action_id']['value']
+            verdict = payload['view']['state']['values']['verdict_input_id']['verdict_id']['value']
+            question = list(filter(lambda block: block['block_id'] == 'question_id', payload['view']['blocks']))[0]['text']['text']
+            subject = json.loads(payload['view']['private_metadata'])
+
+            cute_link = re.sub(r"http.*://", '', link)
+            title = f':star: {cute_link}, {subject["name"]}'
+            client = WebClient(token=constants.SLACK_OAUTH_TOKEN_USER)
+            client.chat_postMessage(channel=subject["channel_name"],
+                                    text=verdict,
+                                    as_user=True,
+                                    attachments=[Attachment(text=question, title=title, title_link=link, fallback=title).to_dict()])
+            form_check_submit(user, link)
         return make_response('', 200)
     return make_response('', 404)
 
@@ -85,11 +103,9 @@ def form_expert_submit(client, payload):
 
 
 @async_task
-def form_check_submit(payload):
-    user = payload['user']['username']
-    link = payload['view']['state']['values']['link_id']['input_link_action_id']['value']
-    client_spreadsheet = authorize()
-    sheet = client_spreadsheet.open('Кандидаты(версия 2)').worksheet('test_list')
+def form_check_submit(user, link):
+    spreadsheet_client = authorize()
+    sheet = spreadsheet_client.open('Кандидаты(версия 2)').worksheet('test_list')
     sheet.append_row([datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S'), 'проверка', user, link])
 
 

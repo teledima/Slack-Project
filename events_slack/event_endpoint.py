@@ -18,7 +18,7 @@ limiter.limit("1 per 5 seconds")(event_endpoint_blueprint)
 
 
 def get_last_message_by_ts(channel, ts):
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
+    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     return client.conversations_history(channel=channel,
                                         latest=float(ts)+1,
                                         limit=1)
@@ -33,7 +33,7 @@ def reaction_added(event_data):
         res = conn.execute('select send_notifications from white_list where user_id = :user_id',
                            {"user_id": event_data['event']['item_user']}).fetchone()
         if res and bool(res[0]) is True:
-            client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
+            client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
             if response['ok']:
                 client.chat_postMessage(channel=event_data['event']['item_user'],
                                         text=f"See your message {response['messages'][0]['text']}")
