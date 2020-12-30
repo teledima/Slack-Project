@@ -16,7 +16,7 @@ def resent_messages():
 
 @async_task
 def resent_messages_background(channel_id):
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_TEST)
+    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT_TEST)
     channel_history = client.channels_history(channel=channel_id)
     if not channel_history['ok']:
         ephemeral_message('Не получилось получить список сообщений')

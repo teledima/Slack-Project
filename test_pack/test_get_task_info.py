@@ -15,17 +15,17 @@ class TestGetTaskInfo:
                 and task_info['answered_users'][0]['user'] == 'shushkasmol'
                 and isinstance(task_info['answered_users'][0]['text'], str))
 
-    def test_two_answers(self):
-        link = 'https://znanija.com/task/30955562'
+    def test_one_accepted_answer_english(self):
+        link = 'https://znanija.com/task/12092457'
         task_info = get_task_info(link)
         assert (task_info['ok'] is True
                 and task_info['link'] == link
                 and isinstance(task_info['question'], str)
                 and isinstance(task_info['subject'], dict)
-                and task_info['subject']['name'] == 'Математика'
-                and task_info['subject']['channel_name'] == 'C6V5A1CF2'
+                and task_info['subject']['name'] == 'Английский язык'
+                and task_info['subject']['channel_name'] == 'C6Z5Y47CG'
                 and len(task_info['answered_users']) == 1
-                and task_info['answered_users'][0]['user'] == 'maymr'
+                and task_info['answered_users'][0]['user'] == 'Decoration'
                 and isinstance(task_info['answered_users'][0]['text'], str))
 
     def test_one_accepted_answer(self):
@@ -78,7 +78,8 @@ class TestGetTaskInfo:
                 and task_info['subject']['name'] == 'Українська мова'
                 and task_info['subject']['channel_name'] == 'C8C51TY0M'
                 and len(task_info['answered_users']) == 2
-                and set([answer['user'] for answer in task_info['answered_users']]).issubset(['polusoidp1l3a7', 'pavlechko82ozvquy'])
+                and set([answer['user']
+                         for answer in task_info['answered_users']]).issubset(['polusoidp1l3a7', 'pavlechko82ozvquy'])
                 and isinstance(task_info['answered_users'][0]['text'], str)
                 and isinstance(task_info['answered_users'][1]['text'], str))
 

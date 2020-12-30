@@ -5,9 +5,9 @@
 		"text": "Форма для проверки",
 		"emoji": true
 	},
-	"submit": {
+	"close": {
 		"type": "plain_text",
-		"text": "Отправить проверку",
+		"text": "Закрыть форму",
 		"emoji": true
 	},
 	"type": "modal",
