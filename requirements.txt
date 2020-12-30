@@ -14,3 +14,4 @@ cfscrape==2.1.1
 google-cloud-firestore==2.0.2
 google==3.0.0
 firebase-admin==4.5.0
+google-auth==1.24.0
