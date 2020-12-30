@@ -1,9 +1,9 @@
-pytz
+pytz==2020.4
 slackeventsapi
 flask
 gunicorn==19.5.0
-requests
-slack-sdk
+requests==2.24.0
+slack-sdk==3.0.0
 oauth2client
 gspread
 beautifulsoup4
@@ -11,3 +11,6 @@ lxml==4.5.2
 pytest==6.0.1
 flask_limiter
 cfscrape==2.1.1
+google-cloud-firestore==2.0.2
+google==3.0.0
+firebase-admin==4.5.0

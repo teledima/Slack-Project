@@ -16,7 +16,7 @@ wonderful_answer_blueprint = Blueprint('wonderful_answer', __name__)
 @wonderful_answer_blueprint.route('/wonderful_answer', methods=['POST', 'GET'])
 def wonderful_answer():
     req = request.form
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN)
+    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     if check_empty(req):
         return make_response('', 200)
     wonderful_answer_background(client, req)
