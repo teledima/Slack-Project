@@ -38,8 +38,6 @@ def entry_point():
                                                  f'чтобы авторизоваться, и попробуйте снова',
                                             channel=payload['user']['id'],
                                             unfurl_links=False)
-            elif payload['callback_id'] == 'add_form_id':
-                client.views_open(trigger_id=payload['trigger_id'], view=get_view('files/validate_form.json'))
             return make_response('', 200)
         except slack_errors.SlackApiError as e:
             code = e.response["error"]
@@ -63,11 +61,7 @@ def entry_point():
                     client.views_update(view=view, view_id=payload['view']['id'])
         return make_response('', 200)
     elif payload['type'] == 'view_submission':
-        if payload['view']['callback_id'] == 'expert_form':
-            form_expert_submit(client, payload)
-        elif payload['view']['callback_id'] == 'candidate_form':
-            form_candidate_submit(client, payload)
-        elif payload['view']['callback_id'] == 'send_check_form':
+        if payload['view']['callback_id'] == 'send_check_form':
             message_payload = get_message_payload(payload)
             client = WebClient(token=message_payload['token'])
             client.chat_postMessage(channel=message_payload['channel_name'],
@@ -80,18 +74,6 @@ def entry_point():
             form_check_submit(message_payload['user'], message_payload['link'])
         return make_response('', 200)
     return make_response('', 404)
-
-
-@async_task
-def form_candidate_submit(client, payload):
-    user_info = {'profile': None, 'nick': None, 'name': None,
-                 'statuses': None, 'tutor': None, 'subject': None, 'happy_birthday': None, 'is_auto_check': False}
-    pass
-
-
-@async_task
-def form_expert_submit(client, payload):
-    pass
 
 
 @async_task
@@ -128,7 +110,7 @@ def construct_view(task_info):
 
 
 def get_message_payload(payload):
-    user = payload['user']['username']
+    user = payload['user']['name']
     link = payload['view']['state']['values']['link_id']['input_link_action_id']['value']
     verdict = payload['view']['state']['values']['verdict_input_id']['verdict_id']['value']
     question = list(filter(lambda block: block['block_id'] == 'question_id', payload['view']['blocks']))[0]['text'][
