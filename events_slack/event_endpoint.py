@@ -54,7 +54,7 @@ def reaction_added(event_data):
             spreadsheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
             try:
                 answered_users = [answer.username for answer in BrainlyTask.get_info(link).answered_users]
-                if expert_name.lower() in answered_users['users']:
+                if expert_name.lower() in answered_users:
                     spreadsheet.append_row([current_timestamp, 'решение', expert_name, link])
                 else:
                     raise SmileExistsButUserHasNotAnswer(f'Смайл "{emoji}" существует но пользователь, который к нему привязан не отвечал на данный вопрос. Пользатель, к которому привязан смайл: {expert_name}. Пользователи, ответившие на вопрос "{link}": {answered_users}')
