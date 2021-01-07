@@ -39,7 +39,7 @@ def reaction_added(event_data):
                                         text=f"See your message {response['messages'][0]['text']}")
     else:
         link = None
-        expert_name = conn.execute('select expert_name from smiles where username = :username', {"username": emoji}).fetchone()
+        expert_name = conn.execute('select expert_name from smiles where name = :name', {"name": emoji}).fetchone()
         current_timestamp = datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S')
         try:
             expert_name = expert_name[0]
