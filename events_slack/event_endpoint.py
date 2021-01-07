@@ -53,7 +53,7 @@ def reaction_added(event_data):
             client = authorize()
             spreadsheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
             try:
-                answered_users = [answer.username for answer in BrainlyTask.get_info(link).answered_users]
+                answered_users = [answer.username.lower() for answer in BrainlyTask.get_info(link).answered_users]
                 if expert_name.lower() in answered_users:
                     spreadsheet.append_row([current_timestamp, 'решение', expert_name, link])
                 else:
