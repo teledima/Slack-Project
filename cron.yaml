@@ -1,0 +1,8 @@
+cron:
+- description: "Collecting statistics"
+  url: /tasks/statistics
+  schedule: every sunday 12:00
+  timezone: Europe/Moscow
+  retry_parameters:
+    job_retry_limit: 5
+    min_backoff_seconds: 600

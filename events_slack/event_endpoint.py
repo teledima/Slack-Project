@@ -5,7 +5,7 @@ from slack_core import constants
 import sqlite3
 import pytz
 from datetime import datetime
-from brainly_pack import get_answered_users
+from brainly_core import BrainlyTask, RequestError, BlockedError
 from events_slack.expert_errors import *
 from znatoks import authorize
 from slack_core.limiter import limiter
@@ -39,7 +39,7 @@ def reaction_added(event_data):
                                         text=f"See your message {response['messages'][0]['text']}")
     else:
         link = None
-        expert_name = conn.execute('select expert_name from smiles where name = :name', {"name": emoji}).fetchone()
+        expert_name = conn.execute('select expert_name from smiles where username = :username', {"username": emoji}).fetchone()
         current_timestamp = datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S')
         try:
             expert_name = expert_name[0]
@@ -50,15 +50,16 @@ def reaction_added(event_data):
             except KeyError:
                 # TODO: find link in text
                 raise KeyError('Ссылка в проверке не найдена')
-            answered_users = get_answered_users(link)
             client = authorize()
             spreadsheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
-            if answered_users['ok'] and expert_name.lower() in answered_users['users']:
-                spreadsheet.append_row([current_timestamp, 'решение', expert_name, link])
-            elif not answered_users['ok']:
+            try:
+                answered_users = [answer.username for answer in BrainlyTask.get_info(link).answered_users]
+                if expert_name.lower() in answered_users['users']:
+                    spreadsheet.append_row([current_timestamp, 'решение', expert_name, link])
+                else:
+                    raise SmileExistsButUserHasNotAnswer(f'Смайл "{emoji}" существует но пользователь, который к нему привязан не отвечал на данный вопрос. Пользатель, к которому привязан смайл: {expert_name}. Пользователи, ответившие на вопрос "{link}": {answered_users}')
+            except RequestError or BlockedError:
                 spreadsheet.append_row([current_timestamp, 'решение', expert_name, link, '?'])
-            else:
-                raise SmileExistsButUserHasNotAnswer(f'Смайл "{emoji}" существует но пользователь, который к нему привязан не отвечал на данный вопрос. Пользатель, к которому привязан смайл: {expert_name}. Пользователи, ответившие на вопрос "{link}": {answered_users}')
         except TypeError:
             if not expert_name:
                 raise ExpertNameNotFound(f'Ник пользователя со смайлом {emoji} отсутствует в базе данных')

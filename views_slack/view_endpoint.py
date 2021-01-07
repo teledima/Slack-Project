@@ -1,7 +1,7 @@
 from flask import Blueprint, request, make_response
 from slack_sdk.web import WebClient
 import slack_sdk.errors as slack_errors
-from slack_sdk.models.blocks import SectionBlock, InputBlock, InputInteractiveElement, DividerBlock
+from slack_sdk.models.blocks import *
 from slack_sdk.models.views import PlainTextObject
 from slack_sdk.models.attachments import Attachment
 from datetime import datetime
@@ -12,7 +12,7 @@ import re
 
 from slack_core import constants
 from slack_core.tasks import async_task
-from brainly_pack import get_task_info
+from brainly_core import BrainlyTask, RequestError, BlockedError
 from znatoks import authorize
 
 
@@ -50,15 +50,16 @@ def entry_point():
             # проверить введёную ссылку
             link = payload['actions'][0]['value']
             if re.search(r'https://znanija\.com/task/[0-9/]+$', link):
-                # получить информацию о задаче
-                task_info = get_task_info(link)
-                # проверить, получилось ли запросить информацию о задаче
-                if task_info['ok']:
+                try:
+                    # получить информацию о задаче
+                    task_info = BrainlyTask.get_info(link)
                     view = construct_view(task_info)
                     view['private_metadata'] = json.dumps(dict(token=payload['view']['private_metadata'],
-                                                               subject=task_info['subject']))
+                                                               subject=task_info.subject.name))
                     # обновить форму
                     client.views_update(view=view, view_id=payload['view']['id'])
+                except RequestError or BlockedError:
+                    pass
         return make_response('', 200)
     elif payload['type'] == 'view_submission':
         if payload['view']['callback_id'] == 'send_check_form':
@@ -84,16 +85,16 @@ def form_check_submit(user, link):
                       user, link])
 
 
-def construct_view(task_info):
+def construct_view(task_info: BrainlyTask):
     # получить исходную форму
     view = get_view('files/check_form_initial.json')
     view['submit'] = PlainTextObject(text='Отправить проверку').to_dict()
-    view['blocks'].append(SectionBlock(text=task_info['question'], block_id='question_id').to_dict())
+    view['blocks'].append(SectionBlock(text=task_info.question, block_id='question_id').to_dict())
     view['blocks'].append(DividerBlock().to_dict())
     # вставить ответы в форму
-    for i in range(0, len(task_info['answered_users'])):
-        view['blocks'].append(SectionBlock(text=f'_*Ответ {task_info["answered_users"][i]["user"]}*_').to_dict())
-        view['blocks'].append(SectionBlock(text=PlainTextObject(text=task_info['answered_users'][i]['text']),
+    for i in range(0, len(task_info.answered_users)):
+        view['blocks'].append(SectionBlock(text=f'_*Ответ {task_info.answered_users[i].username}*_').to_dict())
+        view['blocks'].append(SectionBlock(text=PlainTextObject(text=task_info.answered_users[i].content),
                                            block_id=f'answer_{i}_id',
                                            type='plain_text').to_dict())
 
@@ -106,20 +107,26 @@ def construct_view(task_info):
                                      element=verdict_element,
                                      optional=True,
                                      block_id='verdict_input_id').to_dict())
+    view['blocks'].append(SectionBlock(text='Проверка отправится в',
+                                       block_id='channel_block_id',
+                                       accessory=ChannelSelectElement(initial_channel=task_info.subject.channel_name,
+                                                                      placeholder='Выберите канал',
+                                                                      action_id='channel_selected_id')).to_dict())
     return view
 
 
 def get_message_payload(payload):
-    user = payload['user']['name']
+    user = payload['user']['username']
     link = payload['view']['state']['values']['link_id']['input_link_action_id']['value']
     verdict = payload['view']['state']['values']['verdict_input_id']['verdict_id']['value']
-    question = list(filter(lambda block: block['block_id'] == 'question_id', payload['view']['blocks']))[0]['text'][
-        'text']
+    question = list(filter(lambda block: block['block_id'] == 'question_id',
+                           payload['view']['blocks']))[0]['text']['text']
+    channel_name = payload['view']['state']['values']['channel_block_id']['channel_selected_id']['selected_channel']
     private_metadata = json.loads(payload['view']['private_metadata'])
 
     cute_link = re.sub(r"http.*://", '', link)
-    title = f':star: {cute_link}, {private_metadata["subject"]["name"]}'
-    return dict(token=private_metadata['token'], channel_name=private_metadata['subject']["channel_name"],
+    title = f':star: {cute_link}, {private_metadata["subject"]}'
+    return dict(token=private_metadata['token'], channel_name=channel_name,
                 user=user, verdict=verdict, link=link, title=title, question=question)
 
 
