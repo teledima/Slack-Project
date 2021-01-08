@@ -12,7 +12,7 @@ class AuthedUser:
                               access_token=source['authed_user']['access_token'],
                               token_type=source['authed_user']['token_type']),
                     team=dict(id=source['team']['id'],
-                              name=source['team']['username']))
+                              name=source['team']['name']))
 
     def to_dict(self):
         return dict(app_id=self.app_id, user=self.user, team=self.team)
