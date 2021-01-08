@@ -49,7 +49,7 @@ def entry_point():
         elif payload['view']['callback_id'] == 'send_check_form':
             # проверить введёную ссылку
             link = payload['actions'][0]['value']
-            if re.search(r'https://znanija\.com/task/[0-9/]+$', link):
+            if re.search(r'https:/{2,}znanija\.com/+task/+\d+', link):
                 try:
                     # получить информацию о задаче
                     task_info = BrainlyTask.get_info(link)
