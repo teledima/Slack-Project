@@ -15,7 +15,6 @@ from slack_core.tasks import async_task
 from brainly_core import BrainlyTask, RequestError, BlockedError
 from znatoks import authorize
 
-
 views_endpoint_blueprint = Blueprint('views_endpoint', __name__)
 authed_users_collection = firestore.client().collection('authed_users')
 
@@ -49,9 +48,10 @@ def entry_point():
         elif payload['view']['callback_id'] == 'send_check_form':
             # проверить введёную ссылку
             link = payload['actions'][0]['value']
-            if re.search(r'https:/{2,}znanija\.com/+task/+\d+', link):
+            cleared_link = re.match(r'https?:/{2,}znanija\.com/+task/+\d+', link).group()
+            if cleared_link:
                 # получить информацию о задаче
-                task_info = BrainlyTask.get_info(link)
+                task_info = BrainlyTask.get_info(cleared_link)
                 view = construct_view(task_info)
                 view['private_metadata'] = json.dumps(dict(token=payload['view']['private_metadata'],
                                                            subject=task_info.subject.name))
