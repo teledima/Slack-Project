@@ -50,16 +50,13 @@ def entry_point():
             # проверить введёную ссылку
             link = payload['actions'][0]['value']
             if re.search(r'https:/{2,}znanija\.com/+task/+\d+', link):
-                try:
-                    # получить информацию о задаче
-                    task_info = BrainlyTask.get_info(link)
-                    view = construct_view(task_info)
-                    view['private_metadata'] = json.dumps(dict(token=payload['view']['private_metadata'],
-                                                               subject=task_info.subject.name))
-                    # обновить форму
-                    client.views_update(view=view, view_id=payload['view']['id'])
-                except RequestError or BlockedError:
-                    pass
+                # получить информацию о задаче
+                task_info = BrainlyTask.get_info(link)
+                view = construct_view(task_info)
+                view['private_metadata'] = json.dumps(dict(token=payload['view']['private_metadata'],
+                                                           subject=task_info.subject.name))
+                # обновить форму
+                client.views_update(view=view, view_id=payload['view']['id'])
         return make_response('', 200)
     elif payload['type'] == 'view_submission':
         if payload['view']['callback_id'] == 'send_check_form':
