@@ -51,7 +51,7 @@ def reaction_added(event_data):
                     if 'attachments' in last_message:
                         link = last_message['attachments'][0]['title_link']
                     else:
-                        link = re.match(r'https:/{2,}znanija\.com/+task/+\d+', last_message['text']).group()
+                        link = re.search(r'https:/{2,}znanija\.com/+task/+\d+', last_message['text']).group()
             except KeyError:
                 # TODO: find link in text
                 raise KeyError('Ссылка в проверке не найдена')
