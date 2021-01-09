@@ -60,7 +60,7 @@ def entry_point():
         return make_response('', 200)
     elif payload['type'] == 'view_submission':
         if payload['view']['callback_id'] == 'send_check_form':
-            message_payload = get_message_payload(payload)
+            message_payload = get_message_payload(client, payload)
             client = WebClient(token=message_payload['token'])
             client.chat_postMessage(channel=message_payload['channel_name'],
                                     text=message_payload['verdict'],
@@ -112,8 +112,8 @@ def construct_view(task_info: BrainlyTask):
     return view
 
 
-def get_message_payload(payload):
-    user = payload['user']['username']
+def get_message_payload(client: WebClient, payload):
+    user = client.users_info(user=payload['user']['id'])['user']['profile']['display_name']
     link = payload['view']['state']['values']['link_id']['input_link_action_id']['value']
     verdict = payload['view']['state']['values']['verdict_input_id']['verdict_id']['value']
     question = list(filter(lambda block: block['block_id'] == 'question_id',
