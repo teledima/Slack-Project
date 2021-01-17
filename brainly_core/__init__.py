@@ -1,7 +1,6 @@
 from bs4 import BeautifulSoup
 from typing import List, Optional
 from datetime import datetime
-from torrequest import TorRequest
 import cfscrape
 import sqlite3
 import json
@@ -45,7 +44,7 @@ class UserAnswer:
 
 
 class UserInfo:
-    def __init__(self, user_id: int, tr: TorRequest, nick: Optional[str] = None):
+    def __init__(self, user_id: int, session: cfscrape.Session, nick: Optional[str] = None):
         self.user_id = user_id
         self.nick = nick
         headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
@@ -83,7 +82,7 @@ class UserInfo:
                            "}",
                      variables=dict(subjectsIds=ids, userId=self.user_id))]
         url = 'https://znanija.com/graphql/ru'
-        response = tr.post(url=url, data=json.dumps(data), headers=headers)
+        response = session.post(url=url, data=json.dumps(data), headers=headers)
         if response.ok:
             user_info = response.json()[0]['data']['userById']
             self.nick = user_info['nick'] if self.nick is None else self.nick
@@ -182,14 +181,14 @@ class SubjectRating:
         self.places = places
 
     @staticmethod
-    def get_rating(subject_id: int, type_ratings: int, tr: TorRequest):
+    def get_rating(subject_id: int, type_ratings: int, session: cfscrape.Session):
         link = f'https://znanija.com/api/28/api_global_rankings/view/{subject_id}/{type_ratings}'
-        request = tr.get(url=link)
+        request = session.get(url=link)
         if request.ok:
             request_data = request.json()
             if request_data['success']:
                 return SubjectRating(places=[Place(place=one_place['place'],
-                                                   user=UserInfo(user_id=one_place['user_id'], tr=tr),
+                                                   user=UserInfo(user_id=one_place['user_id'], session=session),
                                                    value=one_place['value'])
                                              for one_place in request_data['data']])
             else:
