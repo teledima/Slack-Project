@@ -67,7 +67,7 @@ def reaction_added(event_data):
                     worksheet.append_row([current_timestamp, 'решение', expert_name, link])
                 else:
                     raise SmileExistsButUserHasNotAnswer(f'Смайл "{emoji}" существует но пользователь, который к нему привязан не отвечал на данный вопрос. Пользатель, к которому привязан смайл: {expert_name}. Пользователи, ответившие на вопрос "{link}": {answered_users}')
-            except RequestError or BlockedError:
+            except (RequestError, BlockedError):
                 worksheet.append_row([current_timestamp, 'решение', expert_name, link, '?'])
         except TypeError:
             if not expert_name:
