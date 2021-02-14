@@ -152,7 +152,12 @@ def construct_view(task_info: BrainlyTask):
 
 
 def get_message_payload(client: WebClient, payload):
-    user = client.users_info(user=payload['user']['id'])['user']['profile']['display_name']
+    user_info = client.users_info(user=payload['user']['id'])
+    user = str()
+    if user_info['user']['profile']['display_name']:
+        user = user_info['user']['profile']['display_name']
+    elif user_info['user']['profile']['real_name']:
+        user = user_info['user']['profile']['real_name']
     link = payload['view']['state']['values']['link_id']['input_link_action_id']['value']
     verdict = payload['view']['state']['values']['verdict_input_id']['verdict_id']['value']
     question = [block for block in payload['view']['blocks'] if block['block_id'] == 'question_id']
