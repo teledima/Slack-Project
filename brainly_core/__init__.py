@@ -119,9 +119,9 @@ class UserInfo:
 
 class BrainlyTask:
     def __init__(self, link: str,
-                 question: str,
-                 subject: Subject,
-                 answered_users: List[UserAnswer]):
+                 question: str = None,
+                 subject: Subject = None,
+                 answered_users: List[UserAnswer] = None):
         self.link = link
         self.question = question
         self.subject = subject
