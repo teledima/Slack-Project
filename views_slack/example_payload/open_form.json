@@ -1,0 +1,18 @@
+{
+    "type": "shortcut",
+    "token": "kaqYiGaVR6BOswIQWCD7GUp8",
+    "action_ts": "1609270739.228704",
+    "team": {
+        "id": "T2243C9NJ",
+        "domain": "znanija-archive"
+    },
+    "user": {
+        "id": "UFU9WJSS0",
+        "username": "teledima00",
+        "team_id": "T2243C9NJ"
+    },
+    "is_enterprise_install": false,
+    "enterprise": null,
+    "callback_id": "send_check_form",
+    "trigger_id": "1609998681220.70139417766.3e4b321996be3e49de82cfda039612ef"
+}
