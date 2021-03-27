@@ -1,0 +1,90 @@
+{
+    "type": "block_actions",
+    "user": {
+        "id": "UFU9WJSS0",
+        "username": "teledima00",
+        "name": "teledima00",
+        "team_id": "T2243C9NJ"
+    },
+    "api_app_id": "A0184CATG9W",
+    "token": "kaqYiGaVR6BOswIQWCD7GUp8",
+    "container": {
+        "type": "view",
+        "view_id": "V01HB1TGULF"
+    },
+    "trigger_id": "1589061723479.70139417766.c2b0ddabd0f7a20604c976b9277440dc",
+    "team": {
+        "id": "T2243C9NJ",
+        "domain": "znanija-archive"
+    },
+    "enterprise": null,
+    "is_enterprise_install": false,
+    "view": {
+        "id": "V01HB1TGULF",
+        "team_id": "T2243C9NJ",
+        "type": "modal",
+        "blocks": [
+            {
+                "type": "input",
+                "block_id": "link_id",
+                "label": {
+                    "type": "plain_text",
+                    "text": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0430 \u0432\u043e\u043f\u0440\u043e\u0441",
+                    "emoji": true
+                },
+                "optional": false,
+                "dispatch_action": true,
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": "input_link_action_id",
+                    "dispatch_action_config": {
+                        "trigger_actions_on": [
+                            "on_enter_pressed"
+                        ]
+                    }
+                }
+            }
+        ],
+        "private_metadata": "xoxp-70139417766-538336638884-1508654471876-94aca50833af412bb0efd11dcb8d2997",
+        "callback_id": "send_check_form",
+        "state": {
+            "values": {
+                "link_id": {
+                    "input_link_action_id": {
+                        "type": "plain_text_input",
+                        "value": "https://znanija.com/task/31620683"
+                    }
+                }
+            }
+        },
+        "hash": "1609270740.s8VG1NkF",
+        "title": {
+            "type": "plain_text",
+            "text": "\u0424\u043e\u0440\u043c\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
+            "emoji": true
+        },
+        "clear_on_close": false,
+        "notify_on_close": false,
+        "close": {
+            "type": "plain_text",
+            "text": "\u0417\u0430\u043a\u0440\u044b\u0442\u044c \u0444\u043e\u0440\u043c\u0443",
+            "emoji": true
+        },
+        "submit": null,
+        "previous_view_id": null,
+        "root_view_id": "V01HB1TGULF",
+        "app_id": "A0184CATG9W",
+        "external_id": "",
+        "app_installed_team_id": "T2243C9NJ",
+        "bot_id": "B017EP7CFJ7"
+    },
+    "actions": [
+        {
+            "type": "plain_text_input",
+            "block_id": "link_id",
+            "action_id": "input_link_action_id",
+            "value": "https://znanija.com/task/31620683",
+            "action_ts": "1609270746.683294"
+        }
+    ]
+}

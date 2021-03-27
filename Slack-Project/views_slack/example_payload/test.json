@@ -1,0 +1,443 @@
+{
+    "type": "view_submission",
+    "team": {
+        "id": "T2243C9NJ",
+        "domain": "znanija-archive"
+    },
+    "user": {
+        "id": "UFU9WJSS0",
+        "username": "teledima00",
+        "name": "teledima00",
+        "team_id": "T2243C9NJ"
+    },
+    "api_app_id": "A0184CATG9W",
+    "token": "kaqYiGaVR6BOswIQWCD7GUp8",
+    "trigger_id": "1746255543941.70139417766.32630622a37003e7944efe129319f1d1",
+    "view": {
+        "id": "V01MLGR503H",
+        "team_id": "T2243C9NJ",
+        "type": "modal",
+        "blocks": [
+            {
+                "type": "input",
+                "block_id": "link_id",
+                "label": {
+                    "type": "plain_text",
+                    "text": "Введите ссылку на вопрос",
+                    "emoji": true
+                },
+                "optional": false,
+                "dispatch_action": true,
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": "input_link_action_id",
+                    "dispatch_action_config": {
+                        "trigger_actions_on": [
+                            "on_enter_pressed"
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "input",
+                "block_id": "verdict_input_id",
+                "label": {
+                    "type": "plain_text",
+                    "text": "Введите ваш вердикт",
+                    "emoji": true
+                },
+                "optional": true,
+                "dispatch_action": false,
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": "verdict_id",
+                    "placeholder": {
+                        "type": "plain_text",
+                        "text": "Полное верное решение, копия или есть ошибки?",
+                        "emoji": true
+                    },
+                    "dispatch_action_config": {
+                        "trigger_actions_on": [
+                            "on_enter_pressed"
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "section",
+                "block_id": "channel_block_id",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Проверка отправится в",
+                    "verbatim": false
+                },
+                "accessory": {
+                    "type": "channels_select",
+                    "action_id": "channel_selected_id",
+                    "initial_channel": "C2ACTAVQ8",
+                    "placeholder": {
+                        "type": "plain_text",
+                        "text": "Выберите канал",
+                        "emoji": true
+                    }
+                }
+            },
+            {
+                "type": "section",
+                "block_id": "select_subject_block_id",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Выберите предмет",
+                    "verbatim": false
+                },
+                "accessory": {
+                    "type": "static_select",
+                    "action_id": "select_subject_action_id",
+                    "placeholder": {
+                        "type": "plain_text",
+                        "text": "Выберите предмет",
+                        "emoji": true
+                    },
+                    "options": [
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Литература",
+                                "emoji": true
+                            },
+                            "value": "C6W3RKNF9"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Алгебра",
+                                "emoji": true
+                            },
+                            "value": "C6V5A1CF2"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Русский язык",
+                                "emoji": true
+                            },
+                            "value": "C9RLE568J"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Геометрия",
+                                "emoji": true
+                            },
+                            "value": "C6V5A1CF2"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Английский язык",
+                                "emoji": true
+                            },
+                            "value": "C6Z5Y47CG"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Химия",
+                                "emoji": true
+                            },
+                            "value": "C6VN48WBD"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Физика",
+                                "emoji": true
+                            },
+                            "value": "C6VN5UUTD"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Биология",
+                                "emoji": true
+                            },
+                            "value": "C7K98JW13"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Окружающий мир",
+                                "emoji": true
+                            },
+                            "value": "C7K55693L"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "География",
+                                "emoji": true
+                            },
+                            "value": "C73P36V32"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Информатика",
+                                "emoji": true
+                            },
+                            "value": "C7L8QNY5T"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "История",
+                                "emoji": true
+                            },
+                            "value": "C7K2SLQ7M"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Математика",
+                                "emoji": true
+                            },
+                            "value": "C6V5A1CF2"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Обществознание",
+                                "emoji": true
+                            },
+                            "value": "C7L8QSA3F"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Українська мова",
+                                "emoji": true
+                            },
+                            "value": "C8C51TY0M"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Українська л?тература",
+                                "emoji": true
+                            },
+                            "value": "C8C51TY0M"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Қазақ тiлi",
+                                "emoji": true
+                            },
+                            "value": "C7D6KFY1X"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Другие предметы",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Экономика",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Музыка",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Право",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Технология",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Беларуская мова",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Французкий язык",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Немецкий язык",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Черчение",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "МХК",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "ОБЖ",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Психология",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "О?zbek tili",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Кыргыз тили",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Астрономия",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Физкультура и спорт",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "ЕГЭ / ОГЭ",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        }
+                    ]
+                }
+            }
+        ],
+        "private_metadata": "{\"token\": \"xoxp-70139417766-538336638884-1508654471876-94aca50833af412bb0efd11dcb8d2997\"}",
+        "callback_id": "send_check_form",
+        "state": {
+            "values": {
+                "link_id": {
+                    "input_link_action_id": {
+                        "type": "plain_text_input",
+                        "value": "https://znanija.com/task/28508107"
+                    }
+                },
+                "verdict_input_id": {
+                    "verdict_id": {
+                        "type": "plain_text_input",
+                        "value": "test"
+                    }
+                },
+                "channel_block_id": {
+                    "channel_selected_id": {
+                        "type": "channels_select",
+                        "selected_channel": "C6Z5Y47CG"
+                    }
+                },
+                "select_subject_block_id": {
+                    "select_subject_action_id": {
+                        "type": "static_select",
+                        "selected_option": {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Другие предметы",
+                                "emoji": true
+                            },
+                            "value": "C2ACTAVQ8"
+                        }
+                    }
+                }
+            }
+        },
+        "hash": "1613230887.IYELzbHw",
+        "title": {
+            "type": "plain_text",
+            "text": "Форма для проверки",
+            "emoji": true
+        },
+        "clear_on_close": false,
+        "notify_on_close": false,
+        "close": {
+            "type": "plain_text",
+            "text": "Закрыть форму",
+            "emoji": true
+        },
+        "submit": {
+            "type": "plain_text",
+            "text": "Отправить проверку",
+            "emoji": true
+        },
+        "previous_view_id": null,
+        "root_view_id": "V01MLGR503H",
+        "app_id": "A0184CATG9W",
+        "external_id": "",
+        "app_installed_team_id": "T2243C9NJ",
+        "bot_id": "B017EP7CFJ7"
+    },
+    "response_urls": [],
+    "is_enterprise_install": false,
+    "enterprise": null
+}
