@@ -6,3 +6,9 @@ cron:
 #   retry_parameters:
 #     job_retry_limit: 5
 #     min_backoff_seconds: 600
+ - description: "Filtering tasks"
+   url: /tasks/popular_filtering
+   schedule: every 4 hours
+   retry_parameters:
+     job_retry_limit: 3
+     min_backoff_seconds: 60

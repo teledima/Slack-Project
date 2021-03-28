@@ -6,6 +6,7 @@ from slack_sdk.models.views import PlainTextObject
 from slack_sdk.models.attachments import Attachment
 from datetime import datetime
 from firebase_admin import firestore
+import cfscrape
 import sqlite3
 import pytz
 import json
@@ -56,7 +57,7 @@ def entry_point():
             if cleared_link:
                 # получить информацию о задаче
                 try:
-                    task_info = BrainlyTask.get_info(cleared_link)
+                    task_info = BrainlyTask.get_info(cleared_link, cfscrape.create_scraper())
                 except (BlockedError, RequestError):
                     # установить по умолчанию
                     task_info = BrainlyTask(link=cleared_link)

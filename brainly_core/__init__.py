@@ -135,9 +135,8 @@ class BrainlyTask:
                 and self.answered_users == other.answered_user)
 
     @staticmethod
-    def get_info(link):
-        scraper = cfscrape.create_scraper()
-        request = scraper.get(f'https://znanija.com/api/14/api_tasks/main_view/{re.search(r"[0-9]+$", link).group(0)}')
+    def get_info(link, session):
+        request = session.get(f'https://znanija.com/api/14/api_tasks/main_view/{re.search(r"[0-9]+$", link).group(0)}')
         if request.ok:
             request_data = request.json()
             if request_data['success']:

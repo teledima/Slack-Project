@@ -3,6 +3,7 @@ from slackeventsapi import SlackEventAdapter
 from slack_sdk.web import WebClient
 from slack_core import constants
 import pytz
+import cfscrape
 from datetime import datetime
 from brainly_core import BrainlyTask, RequestError, BlockedError
 from events_slack.expert_errors import *
@@ -57,7 +58,8 @@ def reaction_added(event_data):
         else:
             worksheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
         try:
-            answered_users = [answer.username.lower() for answer in BrainlyTask.get_info(link).answered_users]
+            answered_users = [answer.username.lower()
+                              for answer in BrainlyTask.get_info(link, cfscrape.create_scraper()).answered_users]
             if expert_name.lower() in answered_users:
                 worksheet.append_row([current_timestamp, 'решение', expert_name, link])
             else:

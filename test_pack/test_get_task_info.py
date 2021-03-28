@@ -1,10 +1,10 @@
 from brainly_core import BrainlyTask, Subject, RequestError
-
+import cfscrape
 
 class TestGetTaskInfo:
     def test_one_answer(self):
         link = 'https://znanija.com/task/33180775'
-        task_info = BrainlyTask.get_info(link)
+        task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
         assert (task_info is not None
                 and task_info.link == link
                 and isinstance(task_info.question, str)
@@ -16,7 +16,7 @@ class TestGetTaskInfo:
 
     def test_one_accepted_answer_english(self):
         link = 'https://znanija.com/task/12092457'
-        task_info = BrainlyTask.get_info(link)
+        task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
         assert (task_info is not None
                 and task_info.link == link
                 and isinstance(task_info.question, str)
@@ -28,7 +28,7 @@ class TestGetTaskInfo:
 
     def test_one_accepted_answer(self):
         link = 'https://znanija.com/task/9998689'
-        task_info = BrainlyTask.get_info(link)
+        task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
         assert (task_info is not None
                 and task_info.link == link
                 and isinstance(task_info.question, str)
@@ -42,7 +42,7 @@ class TestGetTaskInfo:
 
     def test_two_accepted_answers(self):
         link = 'https://znanija.com/task/1092020'
-        task_info = BrainlyTask.get_info(link)
+        task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
         assert (task_info is not None
                 and task_info.link == link
                 and isinstance(task_info.question, str)
@@ -55,7 +55,7 @@ class TestGetTaskInfo:
 
     def test_subject_physic(self):
         link = 'https://znanija.com/task/8817161'
-        task_info = BrainlyTask.get_info(link)
+        task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
         assert (task_info is not None
                 and task_info.link == link
                 and isinstance(task_info.question, str)
@@ -66,7 +66,7 @@ class TestGetTaskInfo:
 
     def test_subject_ukraine(self):
         link = 'https://znanija.com/task/41121320'
-        task_info = BrainlyTask.get_info(link)
+        task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
         assert (task_info is not None
                 and task_info.link == link
                 and isinstance(task_info.question, str)
@@ -80,7 +80,7 @@ class TestGetTaskInfo:
 
     def test_subject_kazakh(self):
         link = 'https://znanija.com/task/41072818'
-        task_info = BrainlyTask.get_info(link)
+        task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
         assert (task_info is not None
                 and task_info.link == link
                 and isinstance(task_info.question, str)
@@ -92,7 +92,7 @@ class TestGetTaskInfo:
 
     def test_subject_other_subject(self):
         link = 'https://znanija.com/task/23105760'
-        task_info = BrainlyTask.get_info(link)
+        task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
         assert (task_info is not None
                 and task_info.link == link
                 and isinstance(task_info.question, str)
@@ -105,6 +105,6 @@ class TestGetTaskInfo:
     def test_deleted_task(self):
         link = 'https://znanija.com/task/6644554'
         try:
-            BrainlyTask.get_info(link)
+            BrainlyTask.get_info(link, cfscrape.create_scraper())
         except RequestError as e:
             assert (e.code == 10)
