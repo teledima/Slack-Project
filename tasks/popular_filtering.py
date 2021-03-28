@@ -16,6 +16,9 @@ deleted_tasks_sheet = spreadsheet.worksheet('deleted-tasks')
 
 @popular_filtering_blueprint.route('/tasks/popular_filtering', methods=['GET'])
 def popular_filter():
+    if 'X-Appengine-Cron' not in request.headers or request.headers['X-Appengine-Cron'] is False:
+        return make_response('', 403)
+    deleted_tasks_sheet.clear()
     subjects_filter = popular_sheet.get('H1:H', major_dimension='COLUMNS')[0]
     # получить все задачи в предметах, в которых хотим отбирать
     tasks = popular_sheet.batch_get(list(map(lambda cell: f'E{cell.row}:G{cell.row}',
@@ -28,7 +31,6 @@ def popular_filter():
     # отфильтровать уже отмеченные задачи
     tasks_no_marked = [task_info[0] for _, task_info in enumerate(tasks) if len(task_info[0]) == 2]
     chunked_tasks = chunks(tasks_no_marked, 50)
-    deleted_tasks_sheet.clear()
     with ThreadPool(len(chunked_tasks)) as pool:
         pool.map(chunk_filter, chunked_tasks)
     return make_response('', 200)

@@ -5,6 +5,7 @@ from views_slack.view_endpoint import views_endpoint_blueprint
 from events_slack.event_endpoint import event_endpoint_blueprint
 from authorization import auth_blueprint
 from tasks.statistics import task_statistics_blueprint
+from tasks.popular_filtering import popular_filtering_blueprint
 from test_api.smiles_check import smiles_check_blueprint
 from test_api.tor_check import tor_check_blueprint
 from slack_core.limiter import limiter
@@ -20,6 +21,7 @@ app.register_blueprint(auth_blueprint)
 app.register_blueprint(task_statistics_blueprint)
 app.register_blueprint(smiles_check_blueprint)
 app.register_blueprint(tor_check_blueprint)
+app.register_blueprint(popular_filtering_blueprint)
 
 
 @app.route('/')
