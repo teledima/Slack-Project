@@ -173,9 +173,9 @@ def get_message_payload(client: WebClient, payload):
     subject = payload['view']['state']['values']['select_subject_block_id']['select_subject_action_id']['selected_option']
     if subject:
         subject = subject['text']['text']
-        title = f':star: {cute_link}, {subject}'
+        title = f':four_leaf_clover: {cute_link}, {subject}'
     else:
-        title = f':star: {cute_link}'
+        title = f':four_leaf_clover: {cute_link}'
     return dict(token=private_metadata['token'], channel_name=channel_name,
                 user=user, verdict=verdict, link=link, title=title, question=question)
 
