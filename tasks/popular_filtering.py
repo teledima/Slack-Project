@@ -18,8 +18,11 @@ deleted_tasks_sheet = spreadsheet.worksheet('deleted-tasks')
 def popular_filter():
     if 'X-Appengine-Cron' not in request.headers or request.headers['X-Appengine-Cron'] is False:
         return make_response('', 403)
+    try:
+        subjects_filter = popular_sheet.get('H1:H', major_dimension='COLUMNS')[0]
+    except KeyError:
+        return make_response('', 200)
     deleted_tasks_sheet.clear()
-    subjects_filter = popular_sheet.get('H1:H', major_dimension='COLUMNS')[0]
     # получить все задачи в предметах, в которых хотим отбирать
     tasks = popular_sheet.batch_get(list(map(lambda cell: f'E{cell.row}:G{cell.row}',
                                              popular_sheet.findall(re.compile('|'.join(subjects_filter)), in_column=6)
