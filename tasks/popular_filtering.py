@@ -3,6 +3,7 @@ from multiprocessing.pool import ThreadPool
 
 import re
 import cfscrape
+from fp.fp import FreeProxy
 
 from znatoks import authorize
 from brainly_core import BrainlyTask, BlockedError, RequestError
@@ -33,7 +34,7 @@ def popular_filter():
 
     # отфильтровать уже отмеченные задачи
     tasks_no_marked = [task_info[0] for _, task_info in enumerate(tasks) if len(task_info[0]) == 2]
-    chunked_tasks = chunks(tasks_no_marked, 50)
+    chunked_tasks = chunks(tasks_no_marked, 20)
     with ThreadPool(len(chunked_tasks)) as pool:
         pool.map(chunk_filter, chunked_tasks)
     return make_response('', 200)
@@ -46,9 +47,11 @@ def chunks(lst, n):
 
 
 def chunk_filter(tasks_list):
+    scraper = cfscrape.Session()
+    scraper.proxies = {'http': FreeProxy().get()}
     for task_info_raw in tasks_list:
         try:
-            task_info = BrainlyTask.get_info(task_info_raw[0], cfscrape.create_scraper())
+            task_info = BrainlyTask.get_info(task_info_raw[0], session=scraper)
             # если есть два ответа
             if len(task_info.answered_users) == 2:
                 task_info_raw += ['two-answers']

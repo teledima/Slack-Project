@@ -16,3 +16,4 @@ google==3.0.0
 firebase-admin==4.5.0
 google-auth==1.24.0
 torpy==1.1.5
+free-proxy==1.0.2
