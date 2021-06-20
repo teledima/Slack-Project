@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 def authorize():
     return gspread.authorize(ServiceAccountCredentials.
-                             from_json_keyfile_name('files/slash-commands-archive-a7072e2bbb96.json',
+                             from_json_keyfile_name('files/slash-commands-archive-6bd3a93cc8eb.json',
                                                     ['https://spreadsheets.google.com/feeds',
                                                      'https://www.googleapis.com/auth/drive']
                                                     )
