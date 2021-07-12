@@ -8,6 +8,7 @@ from tasks.statistics import task_statistics_blueprint
 from tasks.popular_filtering import popular_filtering_blueprint
 from test_api.smiles_check import smiles_check_blueprint
 from test_api.tor_check import tor_check_blueprint
+from znatok_helper_api.watch import watch_blueprint
 from slack_core.limiter import limiter
 
 
@@ -22,6 +23,7 @@ app.register_blueprint(task_statistics_blueprint)
 app.register_blueprint(smiles_check_blueprint)
 app.register_blueprint(tor_check_blueprint)
 app.register_blueprint(popular_filtering_blueprint)
+app.register_blueprint(watch_blueprint)
 
 
 @app.route('/')
