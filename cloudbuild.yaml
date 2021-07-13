@@ -8,4 +8,4 @@ steps:
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: bash
   args: [ '-c','gcloud app deploy cron.yaml' ]
-timeout: 240s
+timeout: 1200s
