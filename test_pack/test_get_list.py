@@ -7,7 +7,6 @@ class TestGetList:
     sheet = authorize().open('Кандидаты(версия 2)').worksheet('watched_tasks')
     sheet.clear()
     sheet.insert_rows([[row, 'C6VN5UUTD', '12453453.433527'] for row in range(1, 70)])
-    sheet.update_acell('D1', '=UNIQUE(A1:C)')
 
     def test_get_default(self):
         response = requests.get(self.base_url)
