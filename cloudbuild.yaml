@@ -1,11 +1,8 @@
 steps:
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: bash
-  args: ['-c', 'gcloud config set app/cloud_build_timeout 240']
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: bash
   args: [ '-c', 'gcloud app deploy --version=$SHORT_SHA app.yaml' ]
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: bash
   args: [ '-c','gcloud app deploy cron.yaml' ]
-timeout: 1200s
+timeout: 240s
