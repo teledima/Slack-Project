@@ -5,7 +5,7 @@ from gspread import CellNotFound
 
 class TestWatch:
     sheet = authorize().open('Кандидаты(версия 2)').worksheet('watched_tasks')
-    link_id = 'https://znanija.com/task/45116478'
+    link_id = 45116478
     channel_id = 'C6VN5UUTD'
     ts = '12453453.433524'
 
@@ -20,8 +20,8 @@ class TestWatch:
         if not (response.status_code == 200 and response.json()['ok']):
             errors.append(response.json()['error'])
         try:
-            cell = self.sheet.find(self.link_id, in_column=1)
-            if not (cell.row == 1 and cell.col == 1 and cell.value == self.link_id):
+            cell = self.sheet.find(str(self.link_id), in_column=1)
+            if not (cell.row == 1 and cell.col == 1 and str(cell.value) == str(self.link_id)):
                 errors.append('incorrect position')
         except CellNotFound:
             errors.append('cell not found')
@@ -34,7 +34,7 @@ class TestWatch:
         if not (response.status_code == 200 and response.json()['ok'] and response.json()['deleted_rows'] == 1):
             errors.append(response.json()['error'])
         try:
-            self.sheet.find(self.link_id, in_column=1)
+            self.sheet.find(str(self.link_id), in_column=1)
             errors.append('link remains')
         except CellNotFound:
             pass
@@ -64,15 +64,15 @@ class TestWatch:
                                 channel_id=self.channel_id,
                                 ts=self.ts,
                                 activity='start'))
-        cells_tasks = self.sheet.findall(self.link_id, in_column=1)
+        cells_tasks = self.sheet.findall(str(self.link_id), in_column=1)
         assert (len(cells_tasks) > 0
                 and cells_tasks[0].row == 1 and cells_tasks[1].row == 2
                 and cells_tasks[1].col == 1 and cells_tasks[1].col == 1
-                and cells_tasks[0].value == self.link_id and cells_tasks[1].value == self.link_id)
+                and str(cells_tasks[0].value) == str(self.link_id) and str(cells_tasks[1].value) == str(self.link_id))
 
     def test_end_watch_duplicated_task(self):
         requests.post('http://localhost:8000/znatok_helper_api/watch',
-                      json=dict(link_id='https://znanija.com/task/451164',
+                      json=dict(link_id=451164,
                                 channel_id=self.channel_id,
                                 ts=self.ts,
                                 activity='start'))
@@ -81,5 +81,5 @@ class TestWatch:
                                            channel_id=self.channel_id,
                                            ts=self.ts,
                                            activity='end'))
-        cells_tasks = self.sheet.findall(self.link_id, in_column=1)
+        cells_tasks = self.sheet.findall(str(self.link_id), in_column=1)
         assert len(cells_tasks) == 0 and response.json()['deleted_rows'] == 2

@@ -7,7 +7,7 @@ watch_blueprint = Blueprint('watch', __name__)
 
 @watch_blueprint.route(base_api + 'watch', methods=['POST'])
 def watch():
-    link_id = request.json['link_id']
+    link_id = str(request.json['link_id'])
     activity = request.json['activity']
     sheet = authorize().open('Кандидаты(версия 2)').worksheet('watched_tasks')
     if activity == 'start':
