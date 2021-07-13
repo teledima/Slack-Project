@@ -3,7 +3,7 @@ steps:
   entrypoint: bash
   args: ['-c', 'gcloud config set app/cloud_build_timeout 240']
 - name: gcr.io/cloud-builders/gcloud
-  args: [ app, deploy, --version=$SHORT_SHA, app.yaml ]
+  args: [ app, deploy, --version=$SHORT_SHA, --stop-previous-version, app.yaml ]
 - name: gcr.io/cloud-builders/gcloud
   args: [ app, deploy, cron.yaml ]
 timeout: 240s
