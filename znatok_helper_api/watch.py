@@ -13,7 +13,8 @@ def watch():
     if activity == 'start':
         channel_id = request.json['channel_id']
         ts = request.json['ts']
-        sheet.append_row([link_id, channel_id, ts])
+        status = request.json['status'] if 'status' in request.json else ''
+        sheet.append_row([link_id, channel_id, ts, status])
         return make_response(dict(ok=True), 200)
     elif activity == 'end':
         rows = [cell.row for cell in sheet.findall(query=link_id, in_column=1)]
