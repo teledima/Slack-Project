@@ -6,13 +6,15 @@ class TestGetList:
     base_url = 'http://localhost:8000/znatok_helper_api/get_list'
     sheet = authorize().open('Кандидаты(версия 2)').worksheet('watched_tasks')
     sheet.clear()
-    sheet.insert_rows([[row, 'C6VN5UUTD', '12453453.433527'] for row in range(1, 70)])
+    sheet.insert_rows([[row, 'C6VN5UUTD', '12453453.433527', 'no_answers' if row % 2 == 0 else '']
+                       for row in range(1, 70)])
 
     def test_get_default(self):
         response = requests.get(self.base_url)
         assert (response.status_code == 200
                 and response.json()['ok']
                 and len(response.json()['tasks']) == 50
+                and min(len(row) for row in response.json()['tasks']) == 4
                 and response.json()['tasks'][0][0] == '1'
                 and response.json()['tasks'][-1][0] == '50'
                 and response.json()['next'] == self.base_url + '?start=51&limit=50')
@@ -22,6 +24,7 @@ class TestGetList:
         assert (response.status_code == 200
                 and response.json()['ok']
                 and len(response.json()['tasks']) == 5
+                and min(len(row) for row in response.json()['tasks']) == 4
                 and response.json()['tasks'][0][0] == '10'
                 and response.json()['tasks'][-1][0] == '14'
                 and response.json()['next'] == self.base_url + '?start=15&limit=5')
@@ -31,6 +34,7 @@ class TestGetList:
         assert (response.status_code == 200
                 and response.json()['ok']
                 and len(response.json()['tasks']) == 60
+                and min(len(row) for row in response.json()['tasks']) == 4
                 and response.json()['tasks'][0][0] == '10'
                 and response.json()['tasks'][-1][0] == '69'
                 and response.json()['next'] is None)
@@ -47,6 +51,7 @@ class TestGetList:
         if not (response.status_code == 200
                 and response.json()['ok']
                 and len(response.json()['tasks']) == 30
+                and min(len(row) for row in response.json()['tasks']) == 4
                 and response.json()['tasks'][0][0] == '1'
                 and response.json()['tasks'][-1][0] == '30'
                 and response.json()['next'] == self.base_url+'?start=31&limit=30'):
@@ -59,6 +64,7 @@ class TestGetList:
         if not (response.status_code == 200
                 and response.json()['ok']
                 and len(response.json()['tasks']) == 30
+                and min(len(row) for row in response.json()['tasks']) == 4
                 and response.json()['tasks'][0][0] == '31'
                 and response.json()['tasks'][-1][0] == '60'
                 and response.json()['next'] == self.base_url+'?start=61&limit=30'):
@@ -71,6 +77,7 @@ class TestGetList:
         if not (response.status_code == 200
                 and response.json()['ok']
                 and len(response.json()['tasks']) == 9
+                and min(len(row) for row in response.json()['tasks']) == 4
                 and response.json()['tasks'][0][0] == '61'
                 and response.json()['tasks'][-1][0] == '69'
                 and response.json()['next'] is None):

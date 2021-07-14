@@ -23,6 +23,10 @@ class TestWatch:
             cell = self.sheet.find(str(self.link_id), in_column=1)
             if not (cell.row == 1 and cell.col == 1 and str(cell.value) == str(self.link_id)):
                 errors.append('incorrect position')
+
+            status_cell = self.sheet.cell(row=cell.row, col=4)
+            if status_cell.value != '':
+                errors.append('incorrect status')
         except CellNotFound:
             errors.append('cell not found')
         assert not errors, 'errors occurred:\n{}'.format('\n'.join(errors))
@@ -58,16 +62,20 @@ class TestWatch:
                       json=dict(link_id=self.link_id,
                                 channel_id=self.channel_id,
                                 ts=self.ts,
-                                activity='start'))
+                                activity='start',
+                                status='no_answers'))
         requests.post('http://localhost:8000/znatok_helper_api/watch',
                       json=dict(link_id=self.link_id,
                                 channel_id=self.channel_id,
                                 ts=self.ts,
-                                activity='start'))
+                                activity='start',
+                                status='no_answers'))
         cells_tasks = self.sheet.findall(str(self.link_id), in_column=1)
         assert (len(cells_tasks) > 0
                 and cells_tasks[0].row == 1 and cells_tasks[1].row == 2
                 and cells_tasks[1].col == 1 and cells_tasks[1].col == 1
+                and self.sheet.cell(row=cells_tasks[0].row, col=4).value == 'no_answers'
+                and self.sheet.cell(row=cells_tasks[1].row, col=4).value == 'no_answers'
                 and str(cells_tasks[0].value) == str(self.link_id) and str(cells_tasks[1].value) == str(self.link_id))
 
     def test_end_watch_duplicated_task(self):
