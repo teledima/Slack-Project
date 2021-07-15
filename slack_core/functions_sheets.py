@@ -1,8 +1,8 @@
-from gspread import Worksheet, Cell
+from gspread import Cell
 from gspread.utils import absolute_range_name, fill_gaps
 
 
-def find_rows(sheet: Worksheet, row_values: list[str]):
+def find_rows(sheet, row_values):
     temp_row_values = []
     data = sheet.spreadsheet.values_get(absolute_range_name(sheet.title))
 
