@@ -9,7 +9,7 @@ class TestWatch:
     channel_id = 'C6VN5UUTD'
     ts = '12453453.433524'
 
-    def test_start_watch(self, ):
+    def test_start_watch(self):
         errors = []
         self.sheet.clear()
         response = requests.post('http://localhost:8000/znatok_helper_api/watch',
@@ -71,12 +71,23 @@ class TestWatch:
                                 activity='start',
                                 status='no_answers'))
         cells_tasks = self.sheet.findall(str(self.link_id), in_column=1)
-        assert (len(cells_tasks) > 0
-                and cells_tasks[0].row == 1 and cells_tasks[1].row == 2
-                and cells_tasks[1].col == 1 and cells_tasks[1].col == 1
+        assert (len(cells_tasks) == 1
+                and cells_tasks[0].row == 1 and cells_tasks[0].row == 1
                 and self.sheet.cell(row=cells_tasks[0].row, col=4).value == 'no_answers'
-                and self.sheet.cell(row=cells_tasks[1].row, col=4).value == 'no_answers'
-                and str(cells_tasks[0].value) == str(self.link_id) and str(cells_tasks[1].value) == str(self.link_id))
+                and str(cells_tasks[0].value) == str(self.link_id))
+
+    def test_start_watch_update_task_status(self):
+        requests.post('http://localhost:8000/znatok_helper_api/watch',
+                      json=dict(link_id=self.link_id,
+                                channel_id=self.channel_id,
+                                ts=self.ts,
+                                activity='start',
+                                status='one_ans'))
+        cells_tasks = self.sheet.findall(str(self.link_id), in_column=1)
+        assert (len(cells_tasks) == 1
+                and cells_tasks[0].row == 1 and cells_tasks[0].row == 1
+                and self.sheet.cell(row=cells_tasks[0].row, col=4).value == 'one_ans'
+                and str(cells_tasks[0].value) == str(self.link_id))
 
     def test_end_watch_duplicated_task(self):
         requests.post('http://localhost:8000/znatok_helper_api/watch',
@@ -90,4 +101,27 @@ class TestWatch:
                                            ts=self.ts,
                                            activity='end'))
         cells_tasks = self.sheet.findall(str(self.link_id), in_column=1)
-        assert len(cells_tasks) == 0 and response.json()['deleted_rows'] == 2
+        assert response.json()['deleted_rows'] == 1 and len(cells_tasks) == 0
+
+    def test_update_task_in_others_channels(self):
+        self.sheet.clear()
+        requests.post('http://localhost:8000/znatok_helper_api/watch',
+                      json=dict(link_id=self.link_id,
+                                channel_id=self.channel_id,
+                                ts=self.ts,
+                                status='no_answers',
+                                activity='start'))
+        requests.post('http://localhost:8000/znatok_helper_api/watch',
+                      json=dict(link_id=self.link_id,
+                                channel_id=self.channel_id + 'A',
+                                ts=self.ts,
+                                status='no_answers',
+                                activity='start'))
+        requests.post('http://localhost:8000/znatok_helper_api/watch',
+                      json=dict(link_id=self.link_id,
+                                channel_id=self.channel_id,
+                                ts=self.ts,
+                                status='one_answer',
+                                activity='start'))
+
+        assert len(self.sheet.findall(str(self.link_id), in_column=1)) == 2 and len(self.sheet.findall(query='one_answer', in_column=4)) == 2
