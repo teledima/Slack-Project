@@ -22,6 +22,8 @@ def popular_filter():
         subjects_filter = popular_sheet.get('H1:H', major_dimension='COLUMNS')[0]
     except KeyError:
         return make_response('', 200)
+    except IndexError:
+        subjects_filter = []
     deleted_tasks_sheet.clear()
     # получить все задачи в предметах, в которых хотим отбирать
     tasks = popular_sheet.batch_get(list(map(lambda cell: f'E{cell.row}:G{cell.row}',
