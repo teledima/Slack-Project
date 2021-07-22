@@ -8,7 +8,6 @@ from datetime import datetime
 from brainly_core import BrainlyTask, RequestError, BlockedError
 from events_slack.expert_errors import *
 from znatoks import authorize
-from slack_core.limiter import limiter
 from firebase_admin import firestore
 import re
 
@@ -16,8 +15,6 @@ event_endpoint_blueprint = Blueprint('event_endpoint', __name__)
 slack_event_adapter = SlackEventAdapter(constants.SLACK_SIGNING_SECRET, endpoint='/event_endpoint',
                                         server=event_endpoint_blueprint)
 smiles_collection = firestore.client().collection('smiles')
-
-limiter.limit("1 per 5 seconds")(event_endpoint_blueprint)
 
 
 def get_last_message_by_ts(channel, ts):
