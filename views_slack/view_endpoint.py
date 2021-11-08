@@ -16,6 +16,7 @@ from slack_core import constants
 from slack_core.tasks import async_task
 from brainly_core import BrainlyTask, BlockedError, RequestError
 from znatoks import authorize
+from znatok_helper_api.watch import start_watch
 
 views_endpoint_blueprint = Blueprint('views_endpoint', __name__)
 authed_users_collection = firestore.client().collection('authed_users')
@@ -73,24 +74,31 @@ def entry_point():
         if payload['view']['callback_id'] == 'send_check_form':
             message_payload = get_message_payload(client, payload)
             client = WebClient(token=message_payload['token'])
-            client.chat_postMessage(channel=message_payload['channel_name'],
-                                    text=message_payload['verdict'],
-                                    as_user=True,
-                                    attachments=[Attachment(text=message_payload['question'],
-                                                            title=message_payload['title'],
-                                                            title_link=message_payload['link'],
-                                                            fallback=message_payload['title']).to_dict()])
-            form_check_submit(message_payload['user'], message_payload['link'])
+            response = client.chat_postMessage(
+                channel=message_payload['channel_name'],
+                text=message_payload['verdict'],
+                as_user=True,
+                attachments=[Attachment(text=message_payload['question'],
+                                        title=message_payload['title'],
+                                        title_link=message_payload['link'],
+                                        fallback=message_payload['title']
+                                        ).to_dict()]
+            )
+            form_check_submit(message_payload['user'], message_payload['link'], response['channel'], response['ts'])
         return make_response('', 200)
     return make_response('', 404)
 
 
 @async_task
-def form_check_submit(user, link):
+def form_check_submit(user, link, channel, ts):
     spreadsheet_client = authorize()
-    sheet = spreadsheet_client.open('Кандидаты(версия 2)').worksheet('test_list')
-    sheet.append_row([datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S'), 'проверка',
-                      user, link])
+    spreadsheet = spreadsheet_client.open('Кандидаты(версия 2)')
+    # insert new check
+    spreadsheet.worksheet('test_list').append_row(
+        [datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S'), 'проверка', user, link]
+    )
+    # start watch
+    start_watch(link, channel, ts)
 
 
 def construct_view(task_info: BrainlyTask):
