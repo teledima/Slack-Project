@@ -1,4 +1,4 @@
-from znatoks import authorize
+from slack_core.sheets import authorize
 import requests
 from gspread import CellNotFound
 

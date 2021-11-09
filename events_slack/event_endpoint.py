@@ -1,15 +1,19 @@
 from flask import Blueprint
-from slackeventsapi import SlackEventAdapter
+
 from slack_sdk.web import WebClient
 from slack_core import constants
+from events_slack.expert_errors import *
+from slackeventsapi import SlackEventAdapter
+
 import pytz
 import cfscrape
-from datetime import datetime
-from brainly_core import BrainlyTask, RequestError, BlockedError
-from events_slack.expert_errors import *
-from znatoks import authorize
-from firebase_admin import firestore
 import re
+from datetime import datetime
+from firebase_admin import firestore
+
+from brainly_core import BrainlyTask, RequestError, BlockedError
+from slack_core.sheets import authorize
+
 
 event_endpoint_blueprint = Blueprint('event_endpoint', __name__)
 slack_event_adapter = SlackEventAdapter(constants.SLACK_SIGNING_SECRET, endpoint='/event_endpoint',

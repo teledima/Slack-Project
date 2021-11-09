@@ -1,6 +1,7 @@
 from brainly_core import BrainlyTask, Subject, RequestError
 import cfscrape
 
+
 class TestGetTaskInfo:
     def test_one_answer(self):
         link = 'https://znanija.com/task/33180775'

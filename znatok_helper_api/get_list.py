@@ -1,5 +1,5 @@
 from flask import make_response
-from znatoks import authorize
+from slack_core.sheets import authorize
 from gspread.utils import fill_gaps
 
 UNIQUE_RANGE = 'A{}:D{}'

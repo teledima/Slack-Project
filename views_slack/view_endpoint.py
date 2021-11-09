@@ -1,11 +1,14 @@
 from flask import Blueprint, request, make_response
-from slack_sdk.web import WebClient
+
 import slack_sdk.errors as slack_errors
+from slack_sdk.web import WebClient
 from slack_sdk.models.blocks import *
 from slack_sdk.models.views import PlainTextObject
 from slack_sdk.models.attachments import Attachment
+
 from datetime import datetime
 from firebase_admin import firestore
+
 import cfscrape
 import sqlite3
 import pytz
@@ -13,10 +16,11 @@ import json
 import re
 
 from slack_core import constants
+from slack_core.sheets import authorize
 from slack_core.tasks import async_task
 from brainly_core import BrainlyTask, BlockedError, RequestError
-from znatoks import authorize
 from znatok_helper_api.watch import start_watch
+from . import get_view
 
 views_endpoint_blueprint = Blueprint('views_endpoint', __name__)
 authed_users_collection = firestore.client().collection('authed_users')
@@ -186,8 +190,3 @@ def get_message_payload(client: WebClient, payload):
         title = f':four_leaf_clover: {cute_link}'
     return dict(token=private_metadata['token'], channel_name=channel_name,
                 user=user, verdict=verdict, link=link, title=title, question=question)
-
-
-def get_view(filename):
-    with open(filename, 'r', encoding='utf-8') as form_file:
-        return json.load(form_file)

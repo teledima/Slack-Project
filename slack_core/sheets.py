@@ -1,5 +1,16 @@
+import gspread
 from gspread import Cell
 from gspread.utils import absolute_range_name, fill_gaps
+from oauth2client.service_account import ServiceAccountCredentials
+
+
+def authorize():
+    return gspread.authorize(ServiceAccountCredentials.
+                             from_json_keyfile_name('files/slash-commands-archive-6bd3a93cc8eb.json',
+                                                    ['https://spreadsheets.google.com/feeds',
+                                                     'https://www.googleapis.com/auth/drive']
+                                                    )
+                             )
 
 
 def find_rows(sheet, row_values):

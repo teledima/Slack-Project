@@ -1,5 +1,4 @@
-from slack_core.functions_sheets import find_rows
-from znatoks import authorize
+from slack_core.sheets import find_rows, authorize
 
 
 def start_watch(link, channel, ts, status=None):
