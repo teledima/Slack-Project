@@ -91,7 +91,7 @@ def main():
           name = 'lower_left_ballpoint_pen'
         )
       except Exception:
-        break
+        continue
     # if there is a pen and there are answers then delete pen smile
     else:
       if 'lower_left_ballpoint_pen' in slack_message['reactions']:
@@ -103,6 +103,6 @@ def main():
             timestamp=slack_message['ts']
           )
         except Exception:
-          break
+          continue
 
   return 'Executed'
