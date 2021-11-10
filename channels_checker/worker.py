@@ -1,29 +1,24 @@
 import json
-import requests
 import cfscrape
 from slack_bolt import App
+from slack_sdk.errors import SlackApiError
 from slack_core import constants
 from flask import Blueprint
+from znatok_helper_api import watch, get_list
 
-channels = ['C6Z5Y47CG', 'C73P36V32', 'C7L8QNY5T', 'C7K2SLQ7M', 'C7D6KFY1X', 'C6W3RKNF9', 'C6V5A1CF2', 'C7L8QSA3F', 'C7K55693L', 'C9RLE568J', 'C8C51TY0M', 'C6VN5UUTD', 'C6VN48WBD']
 slack_bot = App(token=constants.CHECKER_SLACK_BOT_TOKEN, signing_secret=constants.CHECKER_SLACK_SIGNING_SECRET)
 scraper = cfscrape.create_scraper()
 channels_checker_blueprint = Blueprint('channels_checker_blueprint', __name__)
 
 def get_messages():
   stack = []
-  for channel in channels:
-    conversation = slack_bot.client.conversations_history(channel=channel, limit=500)
-
-    for message in conversation['messages']:
-      if not 'attachments' in message or not 'title_link' in message['attachments'][0]: continue
-
-      stack.append({
-        'ts': message['ts'], 
-        'channel': channel, 
-        'taskId': int(message['attachments'][0]['title_link'].split('/').pop())
-      })
-
+  start = 1
+  limit = 50
+  while True:
+    tasks, start, limit = get_list(start, limit)
+    stack += tasks
+    if start is None or limit is None:
+      break
   return stack
 
 def get_brainly_data(msgs):
@@ -69,16 +64,27 @@ def main():
       if len(task['answers']['nodes']) == len(verified_answers):
         print(f"Contains verified -> https://znanija.com/task/{task['databaseId']}")
 
-        slack_bot.client.chat_delete(
-          channel = slack_message['channel'], 
-          ts = slack_message['ts'], 
-          token = constants.CHECKER_SLACK_ADMIN_TOKEN
-        )
-  
+        watch(f'https://znanija.com/task/{task["databaseId"]}', activity='end')
+        try:
+          slack_bot.client.chat_delete(
+            channel = slack_message['channel'],
+            ts = slack_message['ts'],
+            token = constants.CHECKER_SLACK_ADMIN_TOKEN
+          )
+        except SlackApiError:
+          print(f"Answer not found -> https://znanija.com/task/{task['databaseId']}")
+          continue
+
     # answer has been deleted
     if len(task['answers']['nodes']) == 0:
       print(f"No answers -> https://znanija.com/task/{task['databaseId']}")
-
+      watch(
+        link=f'https://znanija.com/task/{task["databaseId"]}',
+        channel=slack_message['channel'],
+        ts=slack_message['ts'],
+        status='no_answers',
+        activity='start'
+      )
       try:
         slack_bot.client.reactions_add(
           channel = slack_message['channel'],
