@@ -1,5 +1,4 @@
 import json
-import requests
 import cfscrape
 from slack_bolt import App
 from slack_core import constants
@@ -24,9 +23,10 @@ def get_messages():
           'ts': message['ts'],
           'channel': channel,
           'taskId': int(message['attachments'][0]['title_link'].split('/').pop()),
-          'reactions': [reaction['name'] for reaction in conversation['reaction']]
+          'reactions': [reaction['name'] for reaction in message['reactions']] if 'reactions' in message else []
         })
-      cursor = conversation['cursor']
+
+      cursor = conversation['response_metadata']['next_cursor'] if conversation['has_more'] else None
       if cursor is None:
         break
   return stack
@@ -95,6 +95,7 @@ def main():
     # if there is a pen and there are answers then delete pen smile
     else:
       if 'lower_left_ballpoint_pen' in slack_message['reactions']:
+        print(f"Remove smile -> https://znanija.com/task/{task['databaseId']}")
         try:
           slack_bot.client.reactions_remove(
             name='lower_left_ballpoint_pen',
