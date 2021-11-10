@@ -46,12 +46,12 @@ def main():
 
   for k in brainly_data.keys():
     task = brainly_data[k]
-    if task == None: continue
+    if task is None: continue
 
     slack_message = None
     for slack_msg in slack_messages:
       if slack_msg['taskId'] == task['databaseId']: slack_message = slack_msg
-    if slack_message == None: continue 
+    if slack_message is None: continue
   
     # contains verified answers -> delete
     if task['answers']['hasVerified'] == True:
@@ -62,14 +62,6 @@ def main():
       if len(task['answers']['nodes']) == len(verified_answers):
         print(f"Contains verified -> https://znanija.com/task/{task['databaseId']}")
 
-        requests.post(
-          url = 'https://slash-commands-archive.appspot.com/znatok_helper_api/watch',
-          data = json.dumps({ 
-            'link_id': f"https://znanija.com/task/{task['databaseId']}",
-            'activity': 'end'
-          }),
-          headers = { 'content-type': 'application/json' }
-        )
         slack_bot.client.chat_delete(
           channel = slack_message['channel'], 
           ts = slack_message['ts'], 
