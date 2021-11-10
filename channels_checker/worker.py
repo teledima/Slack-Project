@@ -13,7 +13,7 @@ channels_checker_blueprint = Blueprint('channels_checker_blueprint', __name__)
 def get_messages():
   stack = []
   for channel in channels:
-    conversation = slack_bot.client.conversations_history(channel = channel)
+    conversation = slack_bot.client.conversations_history(channel=channel, limit=500)
 
     for message in conversation['messages']:
       if not 'attachments' in message or not 'title_link' in message['attachments'][0]: continue
