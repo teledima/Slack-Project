@@ -37,12 +37,19 @@ def get_brainly_data(msgs):
     data = json.dumps({ 'query': '{ ' + query + '}' }),
     headers = { 'content-type': 'application/json; charset=utf-8' }
   )
+  if brainly_data.status_code == 403:
+    print('Blocked! 403 forbidden')
+    return { 'data': None }
+
   return brainly_data.json()
 
 @channels_checker_blueprint.route('/check-slack-channels', methods=['GET'])
 def main():
   slack_messages = get_messages()
+  if len(slack_messages) < 1: return
+
   brainly_data = get_brainly_data(slack_messages)['data']
+  if brainly_data is None: return 'Brainly error! 403 Forbidden'
 
   for k in brainly_data.keys():
     task = brainly_data[k]
