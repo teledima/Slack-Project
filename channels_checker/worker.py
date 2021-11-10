@@ -13,17 +13,22 @@ channels_checker_blueprint = Blueprint('channels_checker_blueprint', __name__)
 def get_messages():
   stack = []
   for channel in channels:
-    conversation = slack_bot.client.conversations_history(channel=channel, limit=500)
+    cursor = None
+    while True:
+      conversation = slack_bot.client.conversations_history(channel=channel, limit=100, cursor=cursor)
 
-    for message in conversation['messages']:
-      if not 'attachments' in message or not 'title_link' in message['attachments'][0]: continue
+      for message in conversation['messages']:
+        if 'attachments' not in message or 'title_link' not in message['attachments'][0]: continue
 
-      stack.append({
-        'ts': message['ts'], 
-        'channel': channel, 
-        'taskId': int(message['attachments'][0]['title_link'].split('/').pop())
-      })
-
+        stack.append({
+          'ts': message['ts'],
+          'channel': channel,
+          'taskId': int(message['attachments'][0]['title_link'].split('/').pop()),
+          'reactions': [reaction['name'] for reaction in conversation['reaction']]
+        })
+      cursor = conversation['cursor']
+      if cursor is None:
+        break
   return stack
 
 def get_brainly_data(msgs):
@@ -87,4 +92,16 @@ def main():
         )
       except Exception:
         break
+    # if there is a pen and there are answers then delete pen smile
+    else:
+      if 'lower_left_ballpoint_pen' in slack_message['reactions']:
+        try:
+          slack_bot.client.reactions_remove(
+            name='lower_left_ballpoint_pen',
+            channel=slack_message['channel'],
+            timestamp=slack_message['ts']
+          )
+        except Exception:
+          break
+
   return 'Executed'
