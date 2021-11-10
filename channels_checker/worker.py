@@ -27,8 +27,6 @@ def get_messages():
   return stack
 
 def get_brainly_data(msgs):
-  if len(msgs) < 1: return
-
   query = ''
   for msg in msgs:
     q = f"task{msg['taskId']}: questionById(id: {int(msg['taskId'])}) " + "{ canBeAnswered databaseId answers { hasVerified nodes {id isConfirmed} } } "
@@ -48,6 +46,8 @@ def get_brainly_data(msgs):
 @channels_checker_blueprint.route('/check-slack-channels', methods=['GET'])
 def main():
   slack_messages = get_messages()
+  if len(slack_messages) < 1: return
+
   brainly_data = get_brainly_data(slack_messages)['data']
   if brainly_data is None: return 'Brainly error! 403 Forbidden'
 
