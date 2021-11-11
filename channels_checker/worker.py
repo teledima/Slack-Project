@@ -17,12 +17,14 @@ def get_messages():
       conversation = slack_bot.client.conversations_history(channel=channel, limit=100, cursor=cursor)
 
       for message in conversation['messages']:
-        if 'attachments' not in message or 'title_link' not in message['attachments'][0]: continue
-
+        text = message['attachments'][0]['title'] if 'attachments' in message else message['text']
+        link = re.search('znanija\.com\/task\/\d*', text)
+        if link is None: continue
+          
         stack.append({
           'ts': message['ts'],
           'channel': channel,
-          'taskId': int(message['attachments'][0]['title_link'].split('/').pop()),
+          'taskId': int(link.group().split('/').pop()),
           'reactions': [reaction['name'] for reaction in message['reactions']] if 'reactions' in message else [],
           'has_threads': 'reply_count' in message
         })
