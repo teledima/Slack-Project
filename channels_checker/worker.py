@@ -23,7 +23,8 @@ def get_messages():
           'ts': message['ts'],
           'channel': channel,
           'taskId': int(message['attachments'][0]['title_link'].split('/').pop()),
-          'reactions': [reaction['name'] for reaction in message['reactions']] if 'reactions' in message else []
+          'reactions': [reaction['name'] for reaction in message['reactions']] if 'reactions' in message else [],
+          'has_threads': 'reply_count' in message
         })
 
       cursor = conversation['response_metadata']['next_cursor'] if conversation['has_more'] else None
@@ -74,6 +75,12 @@ def main():
       if len(task['answers']['nodes']) == len(verified_answers):
         print(f"Contains verified -> https://znanija.com/task/{task['databaseId']}")
 
+        if slack_message['has_threads'] == True:
+          replies = slack_bot.client.conversations_replies(channel = slack_message['channel'], ts = slack_message['ts'])
+          for reply in replies['messages']:
+            if 'parent_user_id' not in reply: continue
+            slack_bot.client.chat_delete(channel = slack_message['channel'], ts = reply['ts'], token = constants.CHECKER_SLACK_ADMIN_TOKEN)
+      
         slack_bot.client.chat_delete(
           channel = slack_message['channel'], 
           ts = slack_message['ts'], 
