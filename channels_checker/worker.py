@@ -18,17 +18,20 @@ def get_messages():
       conversation = slack_bot.client.conversations_history(channel=channel, limit=100, cursor=cursor)
 
       for message in conversation['messages']:
-        text = message['attachments'][0]['title'] if 'attachments' in message else message['text']
-        link = re.search('znanija\.com\/task\/\d*', text)
-        if link is None: continue
+        try:
+          text = message['attachments'][0]['title'] if 'bot_profile' in message else message['text']
+          link = re.search('znanija\.com\/task\/\d*', text)
+          if link is None: continue
           
-        stack.append({
-          'ts': message['ts'],
-          'channel': channel,
-          'taskId': int(link.group().split('/').pop()),
-          'reactions': [reaction['name'] for reaction in message['reactions']] if 'reactions' in message else [],
-          'has_threads': 'reply_count' in message
-        })
+          stack.append({
+            'ts': message['ts'],
+            'channel': channel,
+            'taskId': int(link.group().split('/').pop()),
+            'reactions': [reaction['name'] for reaction in message['reactions']] if 'reactions' in message else [],
+            'has_threads': 'reply_count' in message
+          })
+        except:
+          continue
 
       cursor = conversation['response_metadata']['next_cursor'] if conversation['has_more'] else None
       if cursor is None:
