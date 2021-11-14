@@ -5,7 +5,7 @@ from slack_bolt import App
 from slack_core import constants
 from flask import Blueprint
 
-channels = ['C6Z5Y47CG', 'C73P36V32', 'C7L8QNY5T', 'C7K2SLQ7M', 'C7D6KFY1X', 'C6W3RKNF9', 'C6V5A1CF2', 'C7L8QSA3F', 'C7K55693L', 'C9RLE568J', 'C8C51TY0M', 'C6VN5UUTD', 'C6VN48WBD']
+channels = ['C6Z5Y47CG', 'C73P36V32', 'C7L8QNY5T', 'C7K2SLQ7M', 'C7D6KFY1X', 'C6W3RKNF9', 'C6V5A1CF2', 'C7L8QSA3F', 'C7K55693L', 'C9RLE568J', 'C8C51TY0M', 'C6VN5UUTD', 'C6VN48WBD', 'C7K98JW13']
 slack_bot = App(token=constants.CHECKER_SLACK_BOT_TOKEN, signing_secret=constants.CHECKER_SLACK_SIGNING_SECRET)
 scraper = cfscrape.create_scraper()
 channels_checker_blueprint = Blueprint('channels_checker_blueprint', __name__)
