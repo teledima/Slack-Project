@@ -4,7 +4,7 @@ import cfscrape
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_core import constants
-from flask import Blueprint
+from flask import Blueprint, make_response
 
 channels = ['C6Z5Y47CG', 'C73P36V32', 'C7L8QNY5T', 'C7K2SLQ7M', 'C7D6KFY1X', 'C6W3RKNF9', 'C6V5A1CF2', 'C7L8QSA3F',
             'C7K55693L', 'C9RLE568J', 'C8C51TY0M', 'C6VN5UUTD', 'C6VN48WBD', 'C7K98JW13']
@@ -46,7 +46,7 @@ def get_messages():
 def get_brainly_data(msgs):
     query = ''
     for msg in msgs:
-        q = f"task{msg['taskId']}: questionById(id: {int(msg['taskId'])}) " + "{ canBeAnswered databaseId answers { hasVerified nodes {id isConfirmed} } } "
+        q = f"task{msg['taskId']}: questionById(id: {int(msg['taskId'])}) " + "{ canBeAnswered databaseId answers { nodes { isConfirmed} } } "
         query += q
 
     brainly_data = scraper.post(
@@ -78,33 +78,28 @@ def main():
             if slack_msg['taskId'] == task['databaseId']: slack_message = slack_msg
         if slack_message is None: continue
 
-        # contains verified answers -> delete
-        if task['answers']['hasVerified']:
-            verified_answers = []
-            for answer in task['answers']['nodes']:
-                if answer['isConfirmed']: verified_answers.append(answer)
+        # if all answers are accepted and you cannot add a new question -> delete
+        if len(task['answers']['nodes']) == len([1 for answer in task['answers']['nodes'] if answer['isConfirmed']]) and not task['canBeAnswered']:
+            print(f"Contains verified -> https://znanija.com/task/{task['databaseId']}")
 
-            if len(task['answers']['nodes']) == len(verified_answers):
-                print(f"Contains verified -> https://znanija.com/task/{task['databaseId']}")
+            if slack_message['has_threads']:
+                replies = slack_bot.conversations_replies(channel=slack_message['channel'],
+                                                          ts=slack_message['ts'])
+                for reply in replies['messages']:
+                    if 'parent_user_id' not in reply: continue
+                    slack_bot.chat_delete(channel=slack_message['channel'], ts=reply['ts'],
+                                          token=constants.CHECKER_SLACK_ADMIN_TOKEN)
 
-                if slack_message['has_threads']:
-                    replies = slack_bot.conversations_replies(channel=slack_message['channel'],
-                                                              ts=slack_message['ts'])
-                    for reply in replies['messages']:
-                        if 'parent_user_id' not in reply: continue
-                        slack_bot.chat_delete(channel=slack_message['channel'], ts=reply['ts'],
-                                              token=constants.CHECKER_SLACK_ADMIN_TOKEN)
+            try:
+                slack_bot.chat_delete(
+                    channel=slack_message['channel'],
+                    ts=slack_message['ts'],
+                    token=constants.CHECKER_SLACK_ADMIN_TOKEN
+                )
+            except SlackApiError:
+                continue
 
-                try:
-                    slack_bot.chat_delete(
-                        channel=slack_message['channel'],
-                        ts=slack_message['ts'],
-                        token=constants.CHECKER_SLACK_ADMIN_TOKEN
-                    )
-                except SlackApiError:
-                    continue
-
-        # answer has been deleted
+        # the question contains no answers
         if len(task['answers']['nodes']) == 0:
             print(f"No answers -> https://znanija.com/task/{task['databaseId']}")
 
