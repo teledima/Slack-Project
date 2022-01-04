@@ -4,7 +4,7 @@ import cfscrape
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_core import constants
-from flask import Blueprint, make_response
+from flask import Blueprint
 
 channels = ['C6Z5Y47CG', 'C73P36V32', 'C7L8QNY5T', 'C7K2SLQ7M', 'C7D6KFY1X', 'C6W3RKNF9', 'C6V5A1CF2', 'C7L8QSA3F',
             'C7K55693L', 'C9RLE568J', 'C8C51TY0M', 'C6VN5UUTD', 'C6VN48WBD', 'C7K98JW13']
