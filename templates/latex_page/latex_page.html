@@ -2,68 +2,81 @@
 <html lang="RU-ru">
 <head>
     <meta charset="utf-8">
+    <script defer src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>
-        MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']]
-            }
-        };
+    <script type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS_SVG">
     </script>
     <title>Команды LaTeX</title>
-    <link href="../latex_page/assets/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
-    <link href="latex_page.css" rel="stylesheet">
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="../latex_page/assets/js/bootstrap.bundle.min.js"></script>
+    <link href="{{url_for('static', filename='latex_page.css')}}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            SVG: {
+                styles: {
+                    ".MathJax_SVG svg > g, .MathJax_SVG_Display svg > g": {
+                        color: "blanchedalmond"
+                    },
 
+                    ".MathJax_SVG_Display": {
+                        "text-align": "left !important"
+                    }
+                }
+            }
+        })
+    </script>
+    <script>
+        ;(function() {
+            var QUEUE = MathJax.Hub.queue;  // shorthand for the queue
+            var math = null;                // the element jax for the math output.
+
+            //
+            //  Get the element jax when MathJax has produced it.
+            //
+            QUEUE.Push(function () {
+                math = MathJax.Hub.getAllJax("parsed-formula")[0];
+            });
+
+            //
+            //  The onchange event handler that typesets the
+            //  math entered by the user
+            //
+            window.UpdateMath = function (TeX) {
+                QUEUE.Push(["Text", math, TeX]);
+            }
+
+            window.SaveLocalStorage = function (TeX) {
+                localStorage.setItem("current_formula", TeX)
+            }
+
+            
+            window.onload = () => {
+                document.getElementsByTagName('textarea')[0].textContent = localStorage.getItem("current_formula")
+            }
+        })()
+    </script>
 </head>
-<body>
-<nav class="navbar navbar-expand-sm justify-content-between navbar-dark bg-dark">
-
-    <!-- Links -->
-    <ul class="navbar-nav">
-        <li class="navbar-brand">
-            <a href="#">Home</a>
-        </li>
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Dropdown</a>
-            <div class="dropdown-menu" aria-labelledby="dropdown01">
-                <a class="dropdown-item" href="#">Action</a>
-                <a class="dropdown-item" href="#">Another action</a>
-                <a class="dropdown-item" href="#">Something else here</a>
+<body style="background-color: rgb(36, 39, 43);">
+    <div class="ui form" style="display: flex; flex-direction: column; row-gap: 1rem; width: 75%;">
+        <div class="preview">
+            <div id="parsed-formula">
+                $$$$
             </div>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="#">Список поддерживаемых символов</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="#">Примеры</a>
-        </li>
-    </ul>
-
-    <form class="form-inline">
-        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-    </form>
-
-</nav>
-<div class="jumbotron vertical-center">
-    <div class="container">
-        <p class="lead">Этот сайт предназначен для освоения встроенного редактора формул, который использует язык разметки LaTex
-                <br>Сайт состоит из нескольких разделов:</p>
-        <div class="list-group">
-            <a href="#">Обучение</a>
-            <p>В данном разделе будут рассмотрены основные возможности LaTeX, такие как дроби, корни, системы уравнений,
-                интегралы и другие наиболее часто встречающиееся математические операции и интсрументы.</p>
-            <a href="#">Список поддерживаемых символов</a>
-            <p>Здесь будут приведены различные символы, поддерживаемые LaTeX и встроенным редактором формул.
-            Среди них символы различных математических операций, отношений, а также здесь будет приведён греческий алфавит</p>
-            <a href="#">Примеры</a>
-            <p>Этот раздел посвящён разбору некоторых формул и некоторых тонкостей в использовании LaTeX</p>
+            <div class="preview_text">
+                Просмотр
+            </div>
+        </div>
+        <div class="field">
+            <textarea style="margin-top: 0px; 
+                             margin-bottom: 0px; 
+                             height: 112px; 
+                             max-height: unset;
+                             border-radius: 20px;
+                             background-color: rgb(87, 87, 92); 
+                             font-size: 16px;
+                             color: blanchedalmond;" 
+                      placeholder="Напишите в уравнении" onchange="UpdateMath(this.value)" oninput="SaveLocalStorage(this.value)"></textarea>
+        </div>
     </div>
-</div>
 </body>
 </html>

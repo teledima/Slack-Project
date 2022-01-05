@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from views_slack.view_endpoint import views_endpoint_blueprint
 from events_slack.event_endpoint import event_endpoint_blueprint
 from authorization import auth_blueprint
@@ -22,3 +22,8 @@ for bp in blueprints:
 @app.route('/')
 def hello():
     return "Hello, Slack App!"
+
+
+@app.route('/latex-page', methods=["GET"])
+def latex_page():
+    return render_template('latex_page/latex_page.html')
