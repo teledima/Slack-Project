@@ -79,7 +79,9 @@ def main():
         if slack_message is None: continue
 
         # if all answers are accepted and you cannot add a new question -> delete
-        if len(task['answers']['nodes']) == len([1 for answer in task['answers']['nodes'] if answer['isConfirmed']]) and not task['canBeAnswered']:
+        if (len(task['answers']['nodes']) > 0
+                and len(task['answers']['nodes']) == len([1 for answer in task['answers']['nodes'] if answer['isConfirmed']])
+                and not task['canBeAnswered']):
             print(f"Contains verified -> https://znanija.com/task/{task['databaseId']}")
 
             if slack_message['has_threads']:
