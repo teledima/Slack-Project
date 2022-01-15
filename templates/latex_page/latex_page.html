@@ -5,7 +5,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script type="text/javascript"
-        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS_SVG">
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS_SVG-full">
     </script>
     <title>Команды LaTeX</title>
     <link href="{{url_for('static', filename='latex_page.css')}}" rel="stylesheet">
@@ -22,38 +22,37 @@
                         "text-align": "left !important"
                     }
                 }
+            },
+            TeX: {
+                extensions: ["mhchem.js", "cancel.js", "enclose.js"]
             }
         })
     </script>
     <script>
-        ;(function() {
-            var QUEUE = MathJax.Hub.queue;  // shorthand for the queue
-            var math = null;                // the element jax for the math output.
+        let QUEUE = MathJax.Hub.queue;  // shorthand for the queue
+        let math = null;                // the element jax for the math output.
+        let currentTimeoutIds = [];
 
-            //
-            //  Get the element jax when MathJax has produced it.
-            //
-            QUEUE.Push(function () {
-                math = MathJax.Hub.getAllJax("parsed-formula")[0];
-            });
+        //
+        //  Get the element jax when MathJax has produced it.
+        //
+        QUEUE.Push(function () {
+            math = MathJax.Hub.getAllJax("parsed-formula")[0];
+        });
 
-            //
-            //  The onchange event handler that typesets the
-            //  math entered by the user
-            //
-            window.UpdateMath = function (TeX) {
-                QUEUE.Push(["Text", math, TeX]);
+        const onInputHandler = (textRef) => {
+            if (currentTimeoutIds.length !== 0) {
+                currentTimeoutIds.forEach(item => clearTimeout(item));
+                currentTimeoutIds = []
             }
+            // Save in local storage
+            localStorage.setItem("current_formula", textRef.value)
+            currentTimeoutIds = [...currentTimeoutIds, setTimeout(() => QUEUE.Push(["Text", math, textRef.value]), 1 * 1000)];
+        }
 
-            window.SaveLocalStorage = function (TeX) {
-                localStorage.setItem("current_formula", TeX)
-            }
-
-            
-            window.onload = () => {
-                document.getElementsByTagName('textarea')[0].textContent = localStorage.getItem("current_formula")
-            }
-        })()
+        window.onload = () => {
+            document.getElementsByTagName('textarea')[0].textContent = localStorage.getItem("current_formula")
+        }
     </script>
 </head>
 <body style="background-color: rgb(36, 39, 43);">
@@ -75,7 +74,7 @@
                              background-color: rgb(87, 87, 92); 
                              font-size: 16px;
                              color: blanchedalmond;" 
-                      placeholder="Напишите в уравнении" onchange="UpdateMath(this.value)" oninput="SaveLocalStorage(this.value)"></textarea>
+                      placeholder="Напишите в уравнении" oninput="onInputHandler(this)"></textarea>
         </div>
     </div>
 </body>
