@@ -1,7 +1,8 @@
 from flask import Blueprint
 
 from slack_sdk.web import WebClient
-from slack_core import constants
+from slack_sdk.models.blocks import SectionBlock, MarkdownTextObject, DividerBlock, ActionsBlock, ButtonElement, PlainTextInputElement, InputBlock, HeaderBlock
+from slack_core import constants, get_view
 from events_slack.expert_errors import *
 from slackeventsapi import SlackEventAdapter
 
@@ -18,6 +19,7 @@ from slack_core.sheets import authorize
 event_endpoint_blueprint = Blueprint('event_endpoint', __name__)
 slack_event_adapter = SlackEventAdapter(constants.SLACK_SIGNING_SECRET, endpoint='/event_endpoint',
                                         server=event_endpoint_blueprint)
+
 smiles_collection = firestore.client().collection('smiles')
 
 
@@ -68,4 +70,33 @@ def reaction_added(event_data):
         except (RequestError, BlockedError):
             worksheet.append_row([current_timestamp, 'решение', expert_name, link, '?'])
     else:
+        # TODO: отправить уведомление пользователю
         raise ExpertNameNotFound(f'Ник пользователя со смайлом {emoji} отсутствует в базе данных')
+
+
+@slack_event_adapter.on('app_home_opened')
+def app_home_opened(event_data):
+    bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
+    home_form = get_view('files/app_home_initial.json')
+    list_smiles = [dict(id=doc.id, user_id=doc.get().get('user_id')) for doc in smiles_collection.list_documents()]
+
+    if not list(filter(lambda smile: smile['user_id'] == event_data['event']['user'], list_smiles)):
+        home_form['blocks'].append(SectionBlock(text=MarkdownTextObject(text='У вас ещё нет смайла. Добавьте его, чтобы отмечать свои ответы.')).to_dict())
+        home_form['blocks'].append(InputBlock(block_id='new_smile_input_block', label='Смайлик',
+                                              element=PlainTextInputElement(action_id='new_smile_input_action',  placeholder='Вставьте название вашего смайлика')).to_dict())
+        home_form['blocks'].append(ActionsBlock(elements=[ButtonElement(action_id='add_new_smile', text='Добавить смайл', style='primary')]).to_dict())
+
+    home_form['blocks'].append(HeaderBlock(text='Список смайликов').to_dict())
+    home_form['blocks'].append(DividerBlock().to_dict())
+
+    _ = [
+            [
+                home_form['blocks'].append(
+                    SectionBlock(text=MarkdownTextObject(text=f':{smile["id"]}: этот у <@{smile["user_id"]}>')).to_dict()
+                ),
+                home_form['blocks'].append(ActionsBlock(elements=[ButtonElement(text='Обновить смайл', action_id=f'update_smile_{smile["id"]}')]).to_dict()) if smile["user_id"] == event_data['event']['user'] else None,
+                home_form['blocks'].append(DividerBlock().to_dict())
+            ]
+            for smile in list_smiles
+        ]
+    bot.views_publish(user_id=event_data['event']['user'], view=home_form)

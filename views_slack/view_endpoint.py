@@ -15,12 +15,11 @@ import pytz
 import json
 import re
 
-from slack_core import constants
+from slack_core import constants, get_view
 from slack_core.sheets import authorize
 from slack_core.tasks import async_task
 from brainly_core import BrainlyTask, BlockedError, RequestError
 from znatok_helper_api.watch import start_watch
-from . import get_view
 
 views_endpoint_blueprint = Blueprint('views_endpoint', __name__)
 authed_users_collection = firestore.client().collection('authed_users')
