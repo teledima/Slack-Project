@@ -1,9 +1,8 @@
-from flask import Blueprint, request, make_response
+from flask import Blueprint, request, make_response, jsonify
 
 import slack_sdk.errors as slack_errors
 from slack_sdk.web import WebClient
 from slack_sdk.models.blocks import *
-from slack_sdk.models.views import PlainTextObject
 from slack_sdk.models.attachments import Attachment
 
 from datetime import datetime
@@ -23,6 +22,7 @@ from znatok_helper_api.watch import start_watch
 
 views_endpoint_blueprint = Blueprint('views_endpoint', __name__)
 authed_users_collection = firestore.client().collection('authed_users')
+smiles_collection = firestore.client().collection('smiles')
 
 
 @views_endpoint_blueprint.route('/views-endpoint', methods=["POST"])
@@ -72,7 +72,12 @@ def entry_point():
                 )
                 # обновить форму
                 client.views_update(view=view, view_id=payload['view']['id'])
-        return make_response('', 200)
+        elif payload['actions'][0]['action_id'] == 'change_smile_action':
+            smile_raw = list(payload['view']['state']['values'].values())[0]['input_smile_action']['value'] or ''
+
+            result = change_smile(smile_raw=smile_raw, username=payload['user']['username'], user_id=payload['user']['id'])
+            reconstruct_home(payload['view']['blocks'], payload['user']['id'], result, payload['view']['hash'])
+
     elif payload['type'] == 'view_submission':
         if payload['view']['callback_id'] == 'send_check_form':
             message_payload = get_message_payload(client, payload)
@@ -88,8 +93,38 @@ def entry_point():
                                         ).to_dict()]
             )
             form_check_submit(message_payload['user'], message_payload['link'], response['channel'], response['ts'])
-        return make_response('', 200)
-    return make_response('', 404)
+    return make_response('', 200)
+
+
+def change_smile(smile_raw, username, user_id):
+    try:
+        smile_id = list(filter(lambda item: item != '', smile_raw.split(':'))).pop()
+    except IndexError:
+        return {'error': ':warning: Смайл не введён или введён в некорректном формате'}
+
+    if re.search(r'[^a-z0-9-_]', smile_id):
+        return {'error': ':warning: Название должны состоять из латинских строчных букв, цифр и не могут содержать пробелы, точки и большинство знаков препинания.'}
+
+    # get document by entered smiled_id
+    doc_ref = smiles_collection.document(smile_raw)
+
+    # check that smile is available
+    if not doc_ref.get().exists:
+        # find old smile for user
+        old_smile = smiles_collection.where('user_id', '==', user_id).get()
+        if old_smile:
+            # delete document by old smile
+            old_smile[0].reference.delete()
+
+        data = {'expert_name': username, 'user_id': user_id}
+
+        # create new document
+        doc_ref.set(data)
+        return {'smile': {'id': smile_raw, 'user_id': user_id}}
+    elif doc_ref.get().get('user_id') != user_id:
+        return {'error': f':warning: <@{doc_ref.get().get("user_id")}> уже занял этот смайл'}
+    else:
+        return {}
 
 
 @async_task
@@ -128,15 +163,13 @@ def construct_view(task_info: BrainlyTask):
         for i in range(0, len(task_info.answered_users)):
             view['blocks'].append(SectionBlock(text=f'_*Ответ {task_info.answered_users[i].username}*_').to_dict())
             view['blocks'].append(SectionBlock(text=PlainTextObject(text=task_info.answered_users[i].content),
-                                               block_id=f'answer_{i}_id',
-                                               type='plain_text').to_dict())
+                                               block_id=f'answer_{i}_id').to_dict())
 
     # блок для вердикта
-    verdict_element = InputInteractiveElement(type='plain_text_input',
-                                              action_id='verdict_id',
-                                              placeholder=PlainTextObject(text='Полное верное решение, '
-                                                                               'копия или есть ошибки?'),
-                                              multiline=True)
+    verdict_element = PlainTextInputElement(action_id='verdict_id',
+                                            placeholder=PlainTextObject(text='Полное верное решение, '
+                                                                             'копия или есть ошибки?'),
+                                            multiline=True)
     view['blocks'].append(InputBlock(label=PlainTextObject(text='Введите ваш вердикт'),
                                      element=verdict_element,
                                      optional=True,
@@ -189,3 +222,28 @@ def get_message_payload(client: WebClient, payload):
         title = f':four_leaf_clover: {cute_link}'
     return dict(token=private_metadata['token'], channel_name=channel_name,
                 user=user, verdict=verdict, link=link, title=title, question=question)
+
+
+@async_task
+def reconstruct_home(view_blocks, user_id, result, hash):
+    bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
+    initial_view = get_view('files/app_home_initial.json')
+    for i, block in enumerate(view_blocks):
+        if block['block_id'] == 'input_smile_block' and result.get('error'):
+            initial_view['private_metadata'] = json.dumps(result, ensure_ascii=False)
+            view_blocks.insert(i+1, SectionBlock(block_id='error_block',
+                                                 text=MarkdownTextObject(text=result['error'])).to_dict())
+        elif result.get('smile'):
+            if block['block_id'] == 'description_block':
+                block['text']['text'] = f'Ваш смайл :{result["smile"]["id"]}:'
+            if block['block_id'] == 'error_block':
+                initial_view['private_metadata'] = ''
+                view_blocks.remove(block)
+            if block['block_id'] == 'actions_block':
+                block['elements'][0]['text']['text'] = 'Обновить смайл'
+            if block['block_id'] == f'{result["smile"]["user_id"]}_block':
+                block['text']['text'] = f':{result["smile"]["id"]}: этот у <@{result["smile"]["user_id"]}>'
+
+    initial_view['blocks'] = view_blocks
+
+    bot.views_publish(user_id=user_id, view=initial_view, hash=hash)
