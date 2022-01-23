@@ -1,6 +1,7 @@
 import json
 
 from flask import Blueprint
+from slack_sdk.errors import SlackApiError
 
 from slack_sdk.web import WebClient
 from slack_sdk.models.blocks import *
@@ -78,64 +79,21 @@ def reaction_added(event_data):
 
 @slack_event_adapter.on('app_home_opened')
 def app_home_opened(event_data):
-    admin = is_admin(event_data['event']['user'])
-
     bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
     home_form = get_view('files/app_home_initial.json')
 
-    list_smiles = [dict(id=doc.id, user_id=doc.get().get('user_id')) for doc in smiles_collection.list_documents()]
-    current_user_smail = list(filter(lambda smile: smile['user_id'] == event_data['event']['user'], list_smiles))
-
-    if admin:
-        home_form['blocks'].append(
-            SectionBlock(block_id='user_select_block',
-                         text='Выберите пользователя',
-                         accessory=UserSelectElement(placeholder='Пользователь...',
-                                                     action_id='user_select_action')).to_dict()
-        )
-
-    if not current_user_smail:
-        description_text = 'У вас ещё нет смайла. Добавьте его, чтобы отмечать свои ответы.'
-        button_text = 'Добавить смайл'
-    elif current_user_smail:
-        description_text = f'Ваш смайл :{current_user_smail[0]["id"]}:'
-        button_text = 'Обновить смайл'
-
-    home_form['blocks'].append(SectionBlock(block_id='description_block', text=MarkdownTextObject(text=description_text)).to_dict())
-
     home_form['blocks'].append(
-        InputBlock(
-            block_id='input_smile_block',
-            element=PlainTextInputElement(action_id='input_smile_action', placeholder='Введите смайлик'),
-            label='Смайлик'
-        ).to_dict()
+        SectionBlock(block_id='open_update_smile_view_block',
+                     text='Обновление смайлика',
+                     accessory=ButtonElement(action_id='open_update_smile_view_action', text='Обновить')).to_dict()
     )
 
-    home_form['blocks'].append(ActionsBlock(block_id='actions_block',
-                                            elements=[ButtonElement(action_id='change_smile_action',
-                                                                    text=button_text,
-                                                                    style=None if current_user_smail else 'primary')]).to_dict())
-
-    home_form['blocks'].append(HeaderBlock(block_id='smile_list_header_block', text='Список смайликов').to_dict())
-    home_form['blocks'].append(DividerBlock(block_id='divide_header_list_block').to_dict())
-
-    _ = [
-            [
-                home_form['blocks'].append(
-                    SectionBlock(
-                        block_id=f'{smile["user_id"]}_block',
-                        text=MarkdownTextObject(text=f':{smile["id"]}: этот у <@{smile["user_id"]}>'),
-                        accessory=ButtonElement(
-                            action_id=f'{smile["id"]}_delete_action',
-                            text='Удалить смайл',
-                            value=smile["id"],
-                            confirm=ConfirmObject(title='Удаление смайлика',
-                                                  text=MarkdownTextObject(text=f'Вы действительно хотите удалить смайл <@{smile["user_id"]}>?'),
-                                                  confirm='Да', deny='Отмена')
-                        ) if admin else None
-                    ).to_dict()
-                )
-            ]
-            for smile in list_smiles
-        ]
-    bot.views_publish(user_id=event_data['event']['user'], view=home_form)
+    home_form['blocks'].append(
+        SectionBlock(block_id='open_all_smiles_block',
+                     text='Список смайликов',
+                     accessory=ButtonElement(action_id='open_all_smiles_action', text='Открыть')).to_dict()
+    )
+    try:
+        bot.views_publish(user_id=event_data['event']['user'], view=home_form, hash=event_data['event']['view']['hash'] if 'view' in event_data['event'] else None)
+    except SlackApiError:
+        pass

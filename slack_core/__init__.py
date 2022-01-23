@@ -19,3 +19,9 @@ def is_admin(user_id):
     client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     response = client.users_info(user=user_id)
     return not response['user']['deleted'] and response['user']['is_admin']
+
+
+def get_username(user_id):
+    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
+    response = client.users_info(user=user_id)
+    return response['user']['profile']['display_name']

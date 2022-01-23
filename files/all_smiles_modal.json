@@ -1,0 +1,15 @@
+{
+	"type": "modal",
+	"title": {
+		"type": "plain_text",
+		"text": "Список смайликов",
+		"emoji": true
+	},
+	"close": {
+		"type": "plain_text",
+		"text": "Закрыть",
+		"emoji": true
+	},
+	"blocks": [
+	]
+}

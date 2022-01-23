@@ -14,7 +14,7 @@ import pytz
 import json
 import re
 
-from slack_core import constants, get_view, is_admin
+from slack_core import constants, get_view, is_admin, get_username
 from slack_core.sheets import authorize
 from slack_core.tasks import async_task
 from brainly_core import BrainlyTask, BlockedError, RequestError
@@ -72,19 +72,17 @@ def entry_point():
                 )
                 # обновить форму
                 client.views_update(view=view, view_id=payload['view']['id'])
-        elif payload['actions'][0]['action_id'] == 'change_smile_action':
-            smile_raw = payload['view']['state']['values']['input_smile_block']['input_smile_action']['value'] or ''
-
-            result = change_smile(smile_raw=smile_raw, username=payload['user']['username'], user_id=payload['user']['id'])
-            reconstruct_home(payload['view']['blocks'], payload['user']['id'], result, payload['view']['hash'])
         elif payload['actions'][0]['action_id'].endswith('delete_action'):
             smile_id = payload['actions'][0]['value']
-            result = delete_smile(smile_id)
-            reconstruct_home(payload['view']['blocks'], payload['user']['id'], result, payload['view']['hash'])
+            delete_smile(smile_id)
+            delete_smile_from_modal(payload['view'], smile_id)
         elif payload['actions'][0]['action_id'] == 'user_select_action':
             user_id = payload['actions'][0]['selected_user']
-            result = find_smile_info(user_id)
-            reconstruct_home(payload['view']['blocks'], payload['user']['id'], result, payload['view']['hash'])
+            update_view4update_smile(payload['view'], find_smile_info(user_id)['smile'])
+        elif payload['actions'][0]['action_id'] == 'open_all_smiles_action':
+            open_all_smiles(payload['trigger_id'], is_admin(payload['user']['id']))
+        elif payload['actions'][0]['action_id'] == 'open_update_smile_view_action':
+            open_update_smile_view(payload['trigger_id'], payload['user']['id'], is_admin(payload['user']['id']),)
 
     elif payload['type'] == 'view_submission':
         if payload['view']['callback_id'] == 'send_check_form':
@@ -101,20 +99,36 @@ def entry_point():
                                         ).to_dict()]
             )
             form_check_submit(message_payload['user'], message_payload['link'], response['channel'], response['ts'])
+        elif payload['view']['callback_id'] == 'update_smile_callback':
+            smile_raw = payload['view']['state']['values']['input_smile_block']['input_smile_action']['value']
+
+            if is_admin(payload['user']['id']):
+                user_id = payload['view']['state']['values']['user_select_block']['user_select_action']['selected_user']
+
+            user_id = user_id or payload['user']['id']
+
+            error_response = change_smile(smile_raw=smile_raw, username=get_username(user_id), user_id=user_id)
+
+            if error_response['errors']:
+                return jsonify(error_response), 200
+            else:
+                return jsonify(response_action='clear'), 200
+            # reconstruct_home(payload['view']['blocks'], payload['user']['id'], result, is_admin(payload['user']['id']), payload['view']['hash'])
     return make_response('', 200)
 
 
 def change_smile(smile_raw, username, user_id):
+    error_response = dict(response_action='errors', errors=dict())
     try:
         smile_id = list(filter(lambda item: item != '', smile_raw.split(':'))).pop()
+        if re.search(r'[^a-z0-9-_]', smile_id):
+            error_response['errors']['input_smile_block'] = 'Название должны состоять из латинских строчных букв, цифр и не могут содержать пробелы, точки и большинство знаков препинания'
+            return error_response
     except IndexError:
-        return {'type': 'error', 'text': ':warning: Смайл не введён или введён в некорректном формате'}
-
-    if re.search(r'[^a-z0-9-_]', smile_id):
-        return {'type': 'error', 'text': ':warning: Название должны состоять из латинских строчных букв, цифр и не могут содержать пробелы, точки и большинство знаков препинания.'}
-
+        error_response['errors']['input_smile_block'] = 'Смайлик введён в некорректном формате'
+        return error_response
     # get document by entered smiled_id
-    doc_ref = smiles_collection.document(smile_raw)
+    doc_ref = smiles_collection.document(smile_id)
 
     # check that smile is available
     if not doc_ref.get().exists:
@@ -128,11 +142,10 @@ def change_smile(smile_raw, username, user_id):
 
         # create new document
         doc_ref.set(data)
-        return {'type': 'update' if old_smile else 'add', 'smile': {'id': smile_raw, 'user_id': user_id}}
     elif doc_ref.get().get('user_id') != user_id:
-        return {'type': 'error', 'text': f':warning: <@{doc_ref.get().get("user_id")}> уже занял этот смайл'}
-    else:
-        return {}
+        error_response['errors']['input_smile_block'] = f'{doc_ref.get().get("expert_name")} уже занял этот смайл'
+
+    return error_response
 
 
 def delete_smile(smile_id):
@@ -148,7 +161,7 @@ def find_smile_info(user_id):
         smile_info = search_result[0]
         return {'type': 'info', 'smile': {'id': smile_info.id, 'user_id': user_id}}
     else:
-        return {'type': 'info', 'smile': None}
+        return {'type': 'info', 'smile': {'id': None, 'user_id': user_id}}
 
 
 @async_task
@@ -249,48 +262,89 @@ def get_message_payload(client: WebClient, payload):
 
 
 @async_task
-def reconstruct_home(view_blocks, user_id, result, hash):
+def open_all_smiles(trigger_id, admin):
+    bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
+    all_smiles_view = get_view('files/all_smiles_modal.json')
+    list_smiles = [dict(id=doc.id, user_id=doc.get('user_id')) for doc in smiles_collection.limit(90).get()]
+    _ = [
+            all_smiles_view['blocks'].append(
+                SectionBlock(
+                    block_id=f'{smile["id"]}_block',
+                    text=MarkdownTextObject(text=f':{smile["id"]}: этот у <@{smile["user_id"]}>'),
+                    accessory=ButtonElement(
+                        action_id=f'{smile["id"]}_delete_action',
+                        text='Удалить смайл',
+                        value=smile["id"],
+                        confirm=ConfirmObject(title='Удаление смайлика',
+                                              text=MarkdownTextObject(text=f'Вы действительно хотите удалить смайл <@{smile["user_id"]}>?'),
+                                              confirm='Да', deny='Отмена')
+                    ) if admin else None
+                ).to_dict()
+            )
+            for smile in list_smiles
+        ]
+    bot.views_open(trigger_id=trigger_id, view=all_smiles_view)
+
+
+@async_task
+def delete_smile_from_modal(view, smile_id):
     bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
-    initial_view = get_view('files/app_home_initial.json')
-    for i, block in enumerate(view_blocks):
-        if block['block_id'] == 'input_smile_block' and result.get('type') == 'error':
-            view_blocks.insert(i+1, SectionBlock(block_id='error_block',
-                                                 text=PlainTextObject(text=result['text'])).to_dict())
-        elif result.get('type') in ('update', 'delete'):
-            if block['block_id'] == f'{result["smile"]["user_id"]}_block':
-                if result['type'] == 'update':
-                    block['text']['text'] = f':{result["smile"]["id"]}: этот у <@{result["smile"]["user_id"]}>'
-                elif result['type'] == 'delete':
-                    view_blocks.remove(block)
+    all_smiles_view = get_view('files/all_smiles_modal.json')
+    for i, block in enumerate(view['blocks']):
+        view['blocks'].remove(block) if block['block_id'] == f'{smile_id}_block' else None
+    all_smiles_view['blocks'] = view['blocks']
+    bot.views_update(view=all_smiles_view, view_id=view['id'], hash=view['hash'])
 
-        if result.get('type') == 'info':
-            if block['block_id'] == 'description_block':
-                if result["smile"]:
-                    block['text']['text'] = f'Смайл <@{result["smile"]["user_id"]}> :{result["smile"]["id"]}:'
-                else:
-                    block['text']['text'] = 'Смайл не выбран'
-            elif block['block_id'] == 'actions_block':
-                if result["smile"]:
-                    block['elements'][0].pop('style')
-                    block['elements'][0]['text']['text'] = 'Обновить смайл'
-                else:
-                    block['elements'][0]['style'] = 'primary'
-                    block['elements'][0]['text']['text'] = 'Добавить смайл'
 
-    if result.get('type') == 'add':
-        view_blocks.append(SectionBlock(
-            block_id=f'{result["smile"]["user_id"]}_block',
-            text=MarkdownTextObject(text=f':{result["smile"]["id"]}: этот у <@{result["smile"]["user_id"]}>'),
-            accessory=ButtonElement(
-                action_id=f'{result["smile"]["id"]}_delete_action',
-                text='Удалить смайл',
-                value=result["smile"]["id"],
-                confirm=ConfirmObject(title='Удаление смайлика',
-                                      text=MarkdownTextObject(text=f'Вы действительно хотите удалить смайл <@{result["smile"]["user_id"]}>?'),
-                                      confirm='Да', deny='Отмена')
-            ) if is_admin(result["smile"]["user_id"]) else None
-        ).to_dict())
+@async_task
+def open_update_smile_view(trigger_id, current_user_id, admin):
+    bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
+    update_smile_view = get_view('files/update_smile_modal.json')
 
-    initial_view['blocks'] = view_blocks
+    search_result = smiles_collection.where('user_id', '==', current_user_id).get()
+    current_smile = {'id': search_result[0].id, 'user_id': search_result[0].get('user_id')} if search_result else None
 
-    bot.views_publish(user_id=user_id, view=initial_view, hash=hash)
+    if admin:
+        update_smile_view['blocks'].append(
+            SectionBlock(block_id='user_select_block',
+                         text='Выберите пользователя',
+                         accessory=UserSelectElement(placeholder='Пользователь...',
+                                                     action_id='user_select_action')).to_dict()
+        )
+
+    if not current_smile:
+        description_text = 'У вас ещё нет смайла. Добавьте его, чтобы отмечать свои ответы.'
+        button_text = 'Добавить смайл'
+    elif current_smile:
+        description_text = f'Ваш смайл :{current_smile["id"]}:'
+        button_text = 'Обновить смайл'
+
+    update_smile_view['submit']['text'] = button_text
+    update_smile_view['blocks'].append(
+        SectionBlock(block_id='description_block', text=MarkdownTextObject(text=description_text)).to_dict())
+
+    update_smile_view['blocks'].append(
+        InputBlock(
+            block_id='input_smile_block',
+            element=PlainTextInputElement(action_id='input_smile_action', placeholder='Введите смайлик'),
+            label='Смайлик'
+        ).to_dict()
+    )
+    bot.views_open(trigger_id=trigger_id, view=update_smile_view)
+
+
+@async_task
+def update_view4update_smile(view, smile_info):
+    bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
+    update_smile_view = get_view('files/update_smile_modal.json')
+
+    update_smile_view['submit']['text'] = 'Обновить' if smile_info['id'] else 'Добавить'
+    for i, block in enumerate(view['blocks']):
+        if block['block_id'] == 'description_block':
+            if smile_info["id"]:
+                block['text']['text'] = f'Смайл <@{smile_info["user_id"]}> :{smile_info["id"]}:'
+            else:
+                block['text']['text'] = 'Смайл не выбран'
+
+    update_smile_view['blocks'] = view['blocks']
+    bot.views_update(view=update_smile_view, view_id=view['id'], hash=view['hash'])
