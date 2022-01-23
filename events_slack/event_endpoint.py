@@ -3,8 +3,8 @@ import json
 from flask import Blueprint
 
 from slack_sdk.web import WebClient
-from slack_sdk.models.blocks import SectionBlock, MarkdownTextObject, DividerBlock, ActionsBlock, ButtonElement, PlainTextInputElement, InputBlock, HeaderBlock, PlainTextObject
-from slack_core import constants, get_view
+from slack_sdk.models.blocks import *
+from slack_core import constants, get_view, is_admin
 from events_slack.expert_errors import *
 from slackeventsapi import SlackEventAdapter
 
@@ -28,7 +28,7 @@ smiles_collection = firestore.client().collection('smiles')
 def get_last_message_by_ts(channel, ts):
     client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     return client.conversations_history(channel=channel,
-                                        latest=float(ts)+1,
+                                        latest=str(float(ts)+1),
                                         limit=1)
 
 
@@ -78,16 +78,21 @@ def reaction_added(event_data):
 
 @slack_event_adapter.on('app_home_opened')
 def app_home_opened(event_data):
-    old_view = event_data.get('view')
-    result = json.loads(old_view['private_metadata']) if old_view and old_view['private_metadata'] != '' else {}
+    admin = is_admin(event_data['event']['user'])
 
     bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
     home_form = get_view('files/app_home_initial.json')
-    list_smiles = [dict(id=doc.id, user_id=doc.get().get('user_id')) for doc in smiles_collection.list_documents()]
 
+    list_smiles = [dict(id=doc.id, user_id=doc.get().get('user_id')) for doc in smiles_collection.list_documents()]
     current_user_smail = list(filter(lambda smile: smile['user_id'] == event_data['event']['user'], list_smiles))
-    if result.get('smile'):
-        current_user_smail = [result['smile']]
+
+    if admin:
+        home_form['blocks'].append(
+            SectionBlock(block_id='user_select_block',
+                         text='Выберите пользователя',
+                         accessory=UserSelectElement(placeholder='Пользователь...',
+                                                     action_id='user_select_action')).to_dict()
+        )
 
     if not current_user_smail:
         description_text = 'У вас ещё нет смайла. Добавьте его, чтобы отмечать свои ответы.'
@@ -101,18 +106,10 @@ def app_home_opened(event_data):
     home_form['blocks'].append(
         InputBlock(
             block_id='input_smile_block',
-            element=PlainTextInputElement(action_id='input_smile_action',
-                                          placeholder='Введите ваш смайлик',
-                                          initial_value=current_user_smail[0].get("id")),
+            element=PlainTextInputElement(action_id='input_smile_action', placeholder='Введите смайлик'),
             label='Смайлик'
         ).to_dict()
     )
-
-    if result.get('error'):
-        home_form['blocks'].append(
-            SectionBlock(block_id='error_block',
-                         text=MarkdownTextObject(text=result['error'])).to_dict()
-        )
 
     home_form['blocks'].append(ActionsBlock(block_id='actions_block',
                                             elements=[ButtonElement(action_id='change_smile_action',
@@ -125,11 +122,20 @@ def app_home_opened(event_data):
     _ = [
             [
                 home_form['blocks'].append(
-                    SectionBlock(block_id=f'{smile["user_id"]}_block',
-                                 text=MarkdownTextObject(text=f':{smile["id"]}: этот у <@{smile["user_id"]}>')).to_dict()
-                ),
-                home_form['blocks'].append(DividerBlock(block_id=f'divide_{smile["id"]}_block').to_dict())
+                    SectionBlock(
+                        block_id=f'{smile["user_id"]}_block',
+                        text=MarkdownTextObject(text=f':{smile["id"]}: этот у <@{smile["user_id"]}>'),
+                        accessory=ButtonElement(
+                            action_id=f'{smile["id"]}_delete_action',
+                            text='Удалить смайл',
+                            value=smile["id"],
+                            confirm=ConfirmObject(title='Удаление смайлика',
+                                                  text=MarkdownTextObject(text=f'Вы действительно хотите удалить смайл <@{smile["user_id"]}>?'),
+                                                  confirm='Да', deny='Отмена')
+                        ) if admin else None
+                    ).to_dict()
+                )
             ]
             for smile in list_smiles
         ]
-    bot.views_publish(user_id=event_data['event']['user'], view=home_form, hash=old_view['hash'] if old_view else None)
+    bot.views_publish(user_id=event_data['event']['user'], view=home_form)
