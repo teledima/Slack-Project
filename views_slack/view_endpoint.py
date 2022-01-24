@@ -138,6 +138,10 @@ def change_smile(smile_raw, username, user_id):
             return dict(input_smile_block='Название должно состоять из латинских строчных букв, цифр и не могут содержать пробелы, точки и большинство знаков препинания')
     except IndexError:
         return dict(input_smile_block='Смайлик введён в некорректном формате')
+    # remove the ability to use this smile
+    if smile_id == 'lower_left_ballpoint_pen':
+        return dict(input_smile_block='Вы не можете выбрать этот смайлик')
+
     # get document by entered smiled_id
     doc_ref = smiles_collection.document(smile_id)
 
