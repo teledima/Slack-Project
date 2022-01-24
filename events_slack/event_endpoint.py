@@ -83,7 +83,7 @@ def app_home_opened(event_data):
     home_form = get_view('files/app_home_initial.json')
 
     home_form['blocks'].append(ActionsBlock(block_id='actions_block', elements=[
-        ButtonElement(action_id='open_update_smile_view_action', text='Обновить смайлик'),
+        ButtonElement(action_id='open_update_smile_view_action', text='Открыть настройки'),
         ButtonElement(action_id='open_all_smiles_action', text='Открыть список всех смайликов')
     ]).to_dict())
 

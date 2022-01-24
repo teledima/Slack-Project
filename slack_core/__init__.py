@@ -1,10 +1,13 @@
 import json
+import random
+from string import ascii_letters
+
+from . import constants
 
 import firebase_admin
 from firebase_admin import credentials
 from slack_sdk import WebClient
 
-from . import constants
 
 cred = credentials.Certificate('files/slash-commands-archive-99df74bbe787.json')
 firebase_admin.initialize_app(cred)
@@ -25,3 +28,7 @@ def get_username(user_id):
     client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     response = client.users_info(user=user_id)
     return response['user']['profile']['display_name']
+
+
+def generate_random_id(length=10):
+    return ''.join(random.choice(ascii_letters) for _ in range(length))

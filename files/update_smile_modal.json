@@ -8,7 +8,7 @@
 	},
 	"submit": {
 		"type": "plain_text",
-		"text": "",
+		"text": "Обновить настройки",
 		"emoji": true
 	},
 	"close": {

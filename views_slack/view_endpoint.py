@@ -14,15 +14,18 @@ import pytz
 import json
 import re
 
-from slack_core import constants, get_view, is_admin, get_username
+from slack_core import constants, get_view, is_admin, get_username, generate_random_id
 from slack_core.sheets import authorize
 from slack_core.tasks import async_task
 from brainly_core import BrainlyTask, BlockedError, RequestError
 from znatok_helper_api.watch import start_watch
 
 views_endpoint_blueprint = Blueprint('views_endpoint', __name__)
-authed_users_collection = firestore.client().collection('authed_users')
-smiles_collection = firestore.client().collection('smiles')
+
+firestore_client = firestore.client()
+authed_users_collection = firestore_client.collection('authed_users')
+smiles_collection = firestore_client.collection('smiles')
+settings_collection = firestore_client.collection('users_settings')
 
 
 @views_endpoint_blueprint.route('/views-endpoint', methods=["POST"])
@@ -78,11 +81,11 @@ def entry_point():
             delete_smile_from_modal(payload['view'], smile_id)
         elif payload['actions'][0]['action_id'] == 'user_select_action':
             user_id = payload['actions'][0]['selected_user']
-            update_view4update_smile(payload['view'], find_smile_info(user_id)['smile'])
+            update_view4update_settings(payload['view'], get_info(user_id))
         elif payload['actions'][0]['action_id'] == 'open_all_smiles_action':
             open_all_smiles(payload['trigger_id'], is_admin(payload['user']['id']))
         elif payload['actions'][0]['action_id'] == 'open_update_smile_view_action':
-            open_update_smile_view(payload['trigger_id'], payload['user']['id'], is_admin(payload['user']['id']),)
+            open_update_smile_view(payload['trigger_id'], payload['user']['id'], is_admin(payload['user']['id']))
 
     elif payload['type'] == 'view_submission':
         if payload['view']['callback_id'] == 'send_check_form':
@@ -100,7 +103,14 @@ def entry_point():
             )
             form_check_submit(message_payload['user'], message_payload['link'], response['channel'], response['ts'])
         elif payload['view']['callback_id'] == 'update_smile_callback':
-            smile_raw = payload['view']['state']['values']['input_smile_block']['input_smile_action']['value']
+            state_values = payload['view']['state']['values']
+            smile_raw = state_values['input_smile_block']['input_smile_action']['value']
+            selected_options = [state_values[block]['settings_action']['selected_options']
+                                for block in state_values if 'settings_action' in state_values[block]][0]
+
+            send_notification = len(selected_options) > 0 and len(
+                list(filter(lambda item: item['value'] == 'send_notification', selected_options))
+            ) > 0
 
             if is_admin(payload['user']['id']):
                 user_id = payload['view']['state']['values']['user_select_block']['user_select_action']['selected_user']
@@ -109,25 +119,25 @@ def entry_point():
 
             user_id = user_id or payload['user']['id']
 
-            error_response = change_smile(smile_raw=smile_raw, username=get_username(user_id), user_id=user_id)
+            error_response = dict(response_action='errors', errors=dict())
+            if smile_raw:
+                error_response['errors'] = {**error_response['errors'], **change_smile(smile_raw=smile_raw, username=get_username(user_id), user_id=user_id)}
 
-            if error_response['errors']:
+            if error_response and error_response['errors']:
                 return jsonify(error_response), 200
             else:
+                settings_collection.document(user_id).set({'send_notification': send_notification}, merge=True)
                 return jsonify(response_action='clear'), 200
     return make_response('', 200)
 
 
 def change_smile(smile_raw, username, user_id):
-    error_response = dict(response_action='errors', errors=dict())
     try:
         smile_id = list(filter(lambda item: item != '', smile_raw.split(':'))).pop()
         if re.search(r'[^a-z0-9-_]', smile_id):
-            error_response['errors']['input_smile_block'] = 'Название должно состоять из латинских строчных букв, цифр и не могут содержать пробелы, точки и большинство знаков препинания'
-            return error_response
+            return dict(input_smile_block='Название должно состоять из латинских строчных букв, цифр и не могут содержать пробелы, точки и большинство знаков препинания')
     except IndexError:
-        error_response['errors']['input_smile_block'] = 'Смайлик введён в некорректном формате'
-        return error_response
+        return dict(input_smile_block='Смайлик введён в некорректном формате')
     # get document by entered smiled_id
     doc_ref = smiles_collection.document(smile_id)
 
@@ -144,9 +154,8 @@ def change_smile(smile_raw, username, user_id):
         # create new document
         doc_ref.set(data)
     elif doc_ref.get().get('user_id') != user_id:
-        error_response['errors']['input_smile_block'] = f'{doc_ref.get().get("expert_name")} уже занял этот смайлик'
-
-    return error_response
+        return dict(input_smile_block=f'{doc_ref.get().get("expert_name")} уже занял этот смайлик')
+    return {}
 
 
 def delete_smile(smile_id):
@@ -156,13 +165,20 @@ def delete_smile(smile_id):
     return {'type': 'delete', 'smile': {'id': smile_id, 'user_id': user_id}}
 
 
-def find_smile_info(user_id):
+def get_info(user_id):
+    info = dict(type='info', smile=dict(), settings=dict())
     search_result = smiles_collection.where('user_id', '==', user_id).get()
+    user_settings = settings_collection.document(user_id).get()
     if search_result:
         smile_info = search_result[0]
-        return {'type': 'info', 'smile': {'id': smile_info.id, 'user_id': user_id}}
+        info['smile'] = {'id': smile_info.id, 'user_id': user_id}
     else:
-        return {'type': 'info', 'smile': {'id': None, 'user_id': user_id}}
+        info['smile'] = {'id': None, 'user_id': user_id}
+    if user_settings.exists:
+        info['settings']['send_notification'] = user_settings.get('send_notification')
+    else:
+        info['settings']['send_notification'] = False
+    return info
 
 
 @async_task
@@ -252,7 +268,8 @@ def get_message_payload(client: WebClient, payload):
     private_metadata = json.loads(payload['view']['private_metadata'])
 
     cute_link = re.sub(r"http.*://", '', link)
-    subject = payload['view']['state']['values']['select_subject_block_id']['select_subject_action_id']['selected_option']
+    subject = payload['view']['state']['values']['select_subject_block_id']['select_subject_action_id'][
+        'selected_option']
     if subject:
         subject = subject['text']['text']
         title = f':four_leaf_clover: {cute_link}, {subject}'
@@ -268,22 +285,23 @@ def open_all_smiles(trigger_id, admin):
     all_smiles_view = get_view('files/all_smiles_modal.json')
     list_smiles = [dict(id=doc.id, user_id=doc.get('user_id')) for doc in smiles_collection.limit(90).get()]
     _ = [
-            all_smiles_view['blocks'].append(
-                SectionBlock(
-                    block_id=f'{smile["id"]}_block',
-                    text=MarkdownTextObject(text=f':{smile["id"]}: этот у <@{smile["user_id"]}>'),
-                    accessory=ButtonElement(
-                        action_id=f'{smile["id"]}_delete_action',
-                        text='Удалить смайлик',
-                        value=smile["id"],
-                        confirm=ConfirmObject(title='Удаление смайлика',
-                                              text=MarkdownTextObject(text=f'Вы действительно хотите удалить смайлик <@{smile["user_id"]}>?'),
-                                              confirm='Да', deny='Отмена')
-                    ) if admin else None
-                ).to_dict()
-            )
-            for smile in list_smiles
-        ]
+        all_smiles_view['blocks'].append(
+            SectionBlock(
+                block_id=f'{smile["id"]}_block',
+                text=MarkdownTextObject(text=f':{smile["id"]}: этот у <@{smile["user_id"]}>'),
+                accessory=ButtonElement(
+                    action_id=f'{smile["id"]}_delete_action',
+                    text='Удалить смайлик',
+                    value=smile["id"],
+                    confirm=ConfirmObject(title='Удаление смайлика',
+                                          text=MarkdownTextObject(
+                                              text=f'Вы действительно хотите удалить смайлик <@{smile["user_id"]}>?'),
+                                          confirm='Да', deny='Отмена')
+                ) if admin else None
+            ).to_dict()
+        )
+        for smile in list_smiles
+    ]
     bot.views_open(trigger_id=trigger_id, view=all_smiles_view)
 
 
@@ -301,6 +319,7 @@ def delete_smile_from_modal(view, smile_id):
 def open_update_smile_view(trigger_id, current_user_id, admin):
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     update_smile_view = get_view('files/update_smile_modal.json')
+    current_user_settings = settings_collection.document(current_user_id).get()
 
     search_result = smiles_collection.where('user_id', '==', current_user_id).get()
     current_smile = {'id': search_result[0].id, 'user_id': search_result[0].get('user_id')} if search_result else None
@@ -309,43 +328,73 @@ def open_update_smile_view(trigger_id, current_user_id, admin):
         update_smile_view['blocks'].append(
             ActionsBlock(
                 block_id='user_select_block',
-                elements=[UserSelectElement(placeholder='Выберите пользователя',action_id='user_select_action')]
+                elements=[UserSelectElement(placeholder='Выберите пользователя', action_id='user_select_action')]
             ).to_dict()
         )
 
     if not current_smile:
         description_text = 'У вас ещё нет смайлика. Добавьте его, чтобы отмечать свои ответы.'
-        button_text = 'Добавить смайлик'
     elif current_smile:
         description_text = f'Ваш смайлик :{current_smile["id"]}:'
-        button_text = 'Обновить смайлик'
 
-    update_smile_view['submit']['text'] = button_text
     update_smile_view['blocks'].append(
-        SectionBlock(block_id='description_block', text=MarkdownTextObject(text=description_text)).to_dict())
+        SectionBlock(block_id='description_block', text=MarkdownTextObject(text=description_text)).to_dict()
+    )
 
     update_smile_view['blocks'].append(
         InputBlock(
             block_id='input_smile_block',
             element=PlainTextInputElement(action_id='input_smile_action', placeholder='Введите смайлик'),
-            label='Смайлик'
+            label='Смайлик',
+            optional=True,
         ).to_dict()
     )
+    send_notification_option = Option(
+        value='send_notification',
+        label='Отправлять уведомления',
+        description='Когда под проверкой поставят :lower_left_ballpoint_pen: тогда <@U0184CFEU56> отправит сообщение об освободившемся поле для ответа'
+    )
+    update_smile_view['blocks'].append(
+        ActionsBlock(
+            elements=[
+                CheckboxesElement(
+                    action_id='settings_action',
+                    options=[send_notification_option],
+                    initial_options=[send_notification_option if current_user_settings.exists and current_user_settings.get('send_notification') else None]
+                )
+            ]
+        ).to_dict()
+    )
+
     bot.views_open(trigger_id=trigger_id, view=update_smile_view)
 
 
 @async_task
-def update_view4update_smile(view, smile_info):
+def update_view4update_settings(view, info):
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     update_smile_view = get_view('files/update_smile_modal.json')
 
-    update_smile_view['submit']['text'] = 'Обновить' if smile_info['id'] else 'Добавить'
+    send_notification_option = Option(
+        value='send_notification',
+        label='Отправлять уведомления',
+        description='Когда под проверкой поставят :lower_left_ballpoint_pen: тогда <@U0184CFEU56> отправит уведомление об освободившемся поле для ответа'
+    ).to_dict()
+
+    update_smile_view['submit']['text'] = 'Обновить' if info['smile']['id'] else 'Добавить'
     for i, block in enumerate(view['blocks']):
         if block['block_id'] == 'description_block':
-            if smile_info["id"]:
-                block['text']['text'] = f'Смайлик <@{smile_info["user_id"]}> :{smile_info["id"]}:'
+            if info['smile']["id"]:
+                block['text']['text'] = f'Смайлик <@{info["smile"]["user_id"]}> :{info["smile"]["id"]}:'
             else:
                 block['text']['text'] = 'Смайлик не выбран'
+        elif 'elements' in block and 'settings_action' in block['elements'][0]['action_id']:
+            # to update the checkbox on the page, you need to regenerate the id
+            block['block_id'] = generate_random_id()
+            if info['settings']['send_notification']:
+                block['elements'][0]['initial_options'] = [send_notification_option]
+            elif block['elements'][0].get('initial_options'):
+                block['elements'][0].pop('initial_options')
 
     update_smile_view['blocks'] = view['blocks']
+
     bot.views_update(view=update_smile_view, view_id=view['id'], hash=view['hash'])
