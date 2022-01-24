@@ -1,4 +1,4 @@
-from flask import Blueprint, request, make_response
+from flask import Blueprint, request, make_response, jsonify
 
 import slack_sdk.errors as slack_errors
 from slack_sdk.web import WebClient
@@ -89,7 +89,7 @@ def entry_point():
                                         ).to_dict()]
             )
             form_check_submit(message_payload['user'], message_payload['link'], response['channel'], response['ts'])
-        return make_response('', 200)
+        return jsonify(response_action='clear'), 200
     return make_response('', 404)
 
 
