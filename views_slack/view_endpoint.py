@@ -104,6 +104,8 @@ def entry_point():
 
             if is_admin(payload['user']['id']):
                 user_id = payload['view']['state']['values']['user_select_block']['user_select_action']['selected_user']
+            else:
+                user_id = None
 
             user_id = user_id or payload['user']['id']
 
@@ -113,7 +115,6 @@ def entry_point():
                 return jsonify(error_response), 200
             else:
                 return jsonify(response_action='clear'), 200
-            # reconstruct_home(payload['view']['blocks'], payload['user']['id'], result, is_admin(payload['user']['id']), payload['view']['hash'])
     return make_response('', 200)
 
 
@@ -122,7 +123,7 @@ def change_smile(smile_raw, username, user_id):
     try:
         smile_id = list(filter(lambda item: item != '', smile_raw.split(':'))).pop()
         if re.search(r'[^a-z0-9-_]', smile_id):
-            error_response['errors']['input_smile_block'] = 'Название должны состоять из латинских строчных букв, цифр и не могут содержать пробелы, точки и большинство знаков препинания'
+            error_response['errors']['input_smile_block'] = 'Название должно состоять из латинских строчных букв, цифр и не могут содержать пробелы, точки и большинство знаков препинания'
             return error_response
     except IndexError:
         error_response['errors']['input_smile_block'] = 'Смайлик введён в некорректном формате'
@@ -143,7 +144,7 @@ def change_smile(smile_raw, username, user_id):
         # create new document
         doc_ref.set(data)
     elif doc_ref.get().get('user_id') != user_id:
-        error_response['errors']['input_smile_block'] = f'{doc_ref.get().get("expert_name")} уже занял этот смайл'
+        error_response['errors']['input_smile_block'] = f'{doc_ref.get().get("expert_name")} уже занял этот смайлик'
 
     return error_response
 
@@ -273,10 +274,10 @@ def open_all_smiles(trigger_id, admin):
                     text=MarkdownTextObject(text=f':{smile["id"]}: этот у <@{smile["user_id"]}>'),
                     accessory=ButtonElement(
                         action_id=f'{smile["id"]}_delete_action',
-                        text='Удалить смайл',
+                        text='Удалить смайлик',
                         value=smile["id"],
                         confirm=ConfirmObject(title='Удаление смайлика',
-                                              text=MarkdownTextObject(text=f'Вы действительно хотите удалить смайл <@{smile["user_id"]}>?'),
+                                              text=MarkdownTextObject(text=f'Вы действительно хотите удалить смайлик <@{smile["user_id"]}>?'),
                                               confirm='Да', deny='Отмена')
                     ) if admin else None
                 ).to_dict()
@@ -306,18 +307,18 @@ def open_update_smile_view(trigger_id, current_user_id, admin):
 
     if admin:
         update_smile_view['blocks'].append(
-            SectionBlock(block_id='user_select_block',
-                         text='Выберите пользователя',
-                         accessory=UserSelectElement(placeholder='Пользователь...',
-                                                     action_id='user_select_action')).to_dict()
+            ActionsBlock(
+                block_id='user_select_block',
+                elements=[UserSelectElement(placeholder='Выберите пользователя',action_id='user_select_action')]
+            ).to_dict()
         )
 
     if not current_smile:
-        description_text = 'У вас ещё нет смайла. Добавьте его, чтобы отмечать свои ответы.'
-        button_text = 'Добавить смайл'
+        description_text = 'У вас ещё нет смайлика. Добавьте его, чтобы отмечать свои ответы.'
+        button_text = 'Добавить смайлик'
     elif current_smile:
-        description_text = f'Ваш смайл :{current_smile["id"]}:'
-        button_text = 'Обновить смайл'
+        description_text = f'Ваш смайлик :{current_smile["id"]}:'
+        button_text = 'Обновить смайлик'
 
     update_smile_view['submit']['text'] = button_text
     update_smile_view['blocks'].append(
@@ -342,9 +343,9 @@ def update_view4update_smile(view, smile_info):
     for i, block in enumerate(view['blocks']):
         if block['block_id'] == 'description_block':
             if smile_info["id"]:
-                block['text']['text'] = f'Смайл <@{smile_info["user_id"]}> :{smile_info["id"]}:'
+                block['text']['text'] = f'Смайлик <@{smile_info["user_id"]}> :{smile_info["id"]}:'
             else:
-                block['text']['text'] = 'Смайл не выбран'
+                block['text']['text'] = 'Смайлик не выбран'
 
     update_smile_view['blocks'] = view['blocks']
     bot.views_update(view=update_smile_view, view_id=view['id'], hash=view['hash'])

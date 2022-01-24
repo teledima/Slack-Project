@@ -82,17 +82,11 @@ def app_home_opened(event_data):
     bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
     home_form = get_view('files/app_home_initial.json')
 
-    home_form['blocks'].append(
-        SectionBlock(block_id='open_update_smile_view_block',
-                     text='Обновление смайлика',
-                     accessory=ButtonElement(action_id='open_update_smile_view_action', text='Обновить')).to_dict()
-    )
+    home_form['blocks'].append(ActionsBlock(block_id='actions_block', elements=[
+        ButtonElement(action_id='open_update_smile_view_action', text='Обновить смайлик'),
+        ButtonElement(action_id='open_all_smiles_action', text='Открыть список всех смайликов')
+    ]).to_dict())
 
-    home_form['blocks'].append(
-        SectionBlock(block_id='open_all_smiles_block',
-                     text='Список смайликов',
-                     accessory=ButtonElement(action_id='open_all_smiles_action', text='Открыть')).to_dict()
-    )
     try:
         bot.views_publish(user_id=event_data['event']['user'], view=home_form, hash=event_data['event']['view']['hash'] if 'view' in event_data['event'] else None)
     except SlackApiError:
