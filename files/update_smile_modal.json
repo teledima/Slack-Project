@@ -1,0 +1,21 @@
+{
+	"type": "modal",
+    "callback_id": "update_smile_callback",
+	"title": {
+		"type": "plain_text",
+		"text": "Обновление смайлика",
+		"emoji": true
+	},
+	"submit": {
+		"type": "plain_text",
+		"text": "Обновить настройки",
+		"emoji": true
+	},
+	"close": {
+		"type": "plain_text",
+		"text": "Отмена",
+		"emoji": true
+	},
+	"blocks": [
+	]
+}
