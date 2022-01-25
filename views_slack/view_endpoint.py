@@ -78,12 +78,23 @@ def entry_point():
         elif payload['actions'][0]['action_id'].endswith('delete_action'):
             smile_id = payload['actions'][0]['value']
             delete_smile(smile_id)
-            delete_smile_from_modal(payload['view'], smile_id)
+            metadata = json.loads(payload['view']['private_metadata'])
+            open_list_smiles_view(start=metadata['start_at'], end=metadata['start_at'] + constants.ALL_SMILES_PAGE_SIZE,
+                                  admin=is_admin(payload['user']['id']),
+                                  update_info={'view_id': payload['view']['id'], 'hash': payload['view']['hash']})
         elif payload['actions'][0]['action_id'] == 'user_select_action':
             user_id = payload['actions'][0]['selected_user']
             update_view4update_settings(payload['view'], get_info(user_id))
         elif payload['actions'][0]['action_id'] == 'open_all_smiles_action':
-            open_all_smiles(payload['trigger_id'], is_admin(payload['user']['id']))
+            open_list_smiles_view(start=0, end=constants.ALL_SMILES_PAGE_SIZE, admin=is_admin(payload['user']['id']), add_info={'trigger_id': payload['trigger_id']})
+        elif payload['actions'][0]['action_id'] == 'all_smiles_next_page_action':
+            metadata = json.loads(payload['view']['private_metadata'])
+            open_list_smiles_view(start=metadata['end_at'], end=metadata['end_at'] + constants.ALL_SMILES_PAGE_SIZE, admin=is_admin(payload['user']['id']),
+                                  update_info={'view_id': payload['view']['id'], 'hash': payload['view']['hash']})
+        elif payload['actions'][0]['action_id'] == 'all_smiles_prev_page_action':
+            metadata = json.loads(payload['view']['private_metadata'])
+            open_list_smiles_view(start=metadata['start_at'] - constants.ALL_SMILES_PAGE_SIZE, end=metadata['start_at'], admin=is_admin(payload['user']['id']),
+                                  update_info={'view_id': payload['view']['id'], 'hash': payload['view']['hash']})
         elif payload['actions'][0]['action_id'] == 'open_update_smile_view_action':
             open_update_smile_view(payload['trigger_id'], payload['user']['id'], is_admin(payload['user']['id']))
 
@@ -102,6 +113,7 @@ def entry_point():
                                         ).to_dict()]
             )
             form_check_submit(message_payload['user'], message_payload['link'], response['channel'], response['ts'])
+            return jsonify(response_action='clear'), 200
         elif payload['view']['callback_id'] == 'update_smile_callback':
             state_values = payload['view']['state']['values']
             smile_raw = state_values['input_smile_block']['input_smile_action']['value']
@@ -284,10 +296,22 @@ def get_message_payload(client: WebClient, payload):
 
 
 @async_task
-def open_all_smiles(trigger_id, admin):
+def open_list_smiles_view(start, end, admin, add_info=None, update_info=None):
+    assert add_info or update_info
+
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     all_smiles_view = get_view('files/all_smiles_modal.json')
-    list_smiles = [dict(id=doc.id, user_id=doc.get('user_id')) for doc in smiles_collection.limit(90).get()]
+    # querying the database for the number of elements 1 more than the page size
+    smiles_page_one_extra = [doc for doc in smiles_collection.order_by(field_path='expert_name').offset(start).limit(end - start + 1).get()]
+
+    # check if the requested number is equal to the length of the array, then 1 additional element is discarded
+    if len(smiles_page_one_extra) == end - start + 1:
+        smiles_page = smiles_page_one_extra[:-1]
+    # otherwise there are no more elements in the database and you need to display everything
+    else:
+        smiles_page = smiles_page_one_extra
+
+    list_smiles = [dict(id=doc.reference.id, user_id=doc.get('user_id')) for doc in smiles_page]
     _ = [
         all_smiles_view['blocks'].append(
             SectionBlock(
@@ -306,17 +330,25 @@ def open_all_smiles(trigger_id, admin):
         )
         for smile in list_smiles
     ]
-    bot.views_open(trigger_id=trigger_id, view=all_smiles_view)
 
+    navigation_block = ActionsBlock(block_id='navigation_block', elements=[])
+    metadata = dict(start_at=start)
 
-@async_task
-def delete_smile_from_modal(view, smile_id):
-    bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
-    all_smiles_view = get_view('files/all_smiles_modal.json')
-    for i, block in enumerate(view['blocks']):
-        view['blocks'].remove(block) if block['block_id'] == f'{smile_id}_block' else None
-    all_smiles_view['blocks'] = view['blocks']
-    bot.views_update(view=all_smiles_view, view_id=view['id'], hash=view['hash'])
+    if start != 0:
+        navigation_block.elements.append(ButtonElement(action_id='all_smiles_prev_page_action', text='Предыдущая страница'))
+
+    if len(smiles_page_one_extra) == end - start + 1:
+        metadata['end_at'] = end
+        navigation_block.elements.append(ButtonElement(action_id='all_smiles_next_page_action', text='Следующая страница'))
+
+    if navigation_block.elements:
+        all_smiles_view['blocks'].append(navigation_block.to_dict())
+        all_smiles_view['private_metadata'] = json.dumps(metadata)
+
+    if add_info:
+        bot.views_open(trigger_id=add_info['trigger_id'], view=all_smiles_view)
+    else:
+        bot.views_update(view=all_smiles_view, view_id=update_info['view_id'], hash=update_info['hash'])
 
 
 @async_task
