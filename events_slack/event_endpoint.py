@@ -1,13 +1,10 @@
-import json
-
 from flask import Blueprint
 from slack_sdk.errors import SlackApiError
 
 from slack_sdk.web import WebClient
 from slack_sdk.models.blocks import *
-from slack_core import constants, get_view, is_admin, extract_link_from_message
+from slack_core import constants, get_view, extract_link_from_message
 from events_slack.expert_errors import *
-from slackeventsapi import SlackEventAdapter
 
 import pytz
 import cfscrape
@@ -15,12 +12,12 @@ from datetime import datetime
 from firebase_admin import firestore
 
 from brainly_core import BrainlyTask, RequestError, BlockedError
+from slack_core import SlackEventAdapter
 from slack_core.sheets import authorize
 
 
 event_endpoint_blueprint = Blueprint('event_endpoint', __name__)
-slack_event_adapter = SlackEventAdapter(constants.SLACK_SIGNING_SECRET, endpoint='/event_endpoint',
-                                        server=event_endpoint_blueprint)
+slack_event_adapter = SlackEventAdapter(router=event_endpoint_blueprint, rule='/event_endpoint')
 
 smiles_collection = firestore.client().collection('smiles')
 settings_collection = firestore.client().collection('users_settings')
