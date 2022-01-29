@@ -2,7 +2,6 @@ from flask import Blueprint
 from slack_sdk.errors import SlackApiError
 
 from slack_sdk.web import WebClient
-from slack_sdk.models.blocks import *
 from slack_core import constants, get_view, extract_link_from_message
 from events_slack.expert_errors import *
 
@@ -82,12 +81,7 @@ def reaction_added(event_data):
 @slack_event_adapter.on('app_home_opened')
 def app_home_opened(event_data):
     bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
-    home_form = get_view('files/app_home_initial.json')
-
-    home_form['blocks'].append(ActionsBlock(block_id='actions_block', elements=[
-        ButtonElement(action_id='open_update_smile_view_action', text='Открыть настройки'),
-        ButtonElement(action_id='open_all_smiles_action', text='Открыть список всех смайликов')
-    ]).to_dict())
+    home_form = get_view('files/app_home/app_home.json')
 
     try:
         bot.views_publish(user_id=event_data['event']['user'], view=home_form, hash=event_data['event']['view']['hash'] if 'view' in event_data['event'] else None)

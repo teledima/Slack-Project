@@ -51,10 +51,7 @@ def entry_point():
             code = e.response["error"]
             return make_response(f"Failed to open a modal due to {code}", 200)
     elif payload['type'] == 'block_actions':
-        if payload['view']['callback_id'] == 'valid_form':
-            value = payload['actions'][0]['selected_option']['value']
-            client.views_update(view=get_view(f'files/form_add_{value}.json'), view_id=payload['view']['id'])
-        elif payload['view']['callback_id'] == 'send_check_form':
+        if payload['view']['callback_id'] == 'send_check_form':
             # проверить введёную ссылку
             link = [action['value'] for action in payload['actions']
                     if action['block_id'] == 'link_id' and action['action_id'] == 'input_link_action_id']
@@ -300,7 +297,7 @@ def open_list_smiles_view(start, end, admin, add_info=None, update_info=None):
     assert add_info or update_info
 
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
-    all_smiles_view = get_view('files/all_smiles_modal.json')
+    all_smiles_view = get_view('files/app_home/all_smiles_modal.json')
     # querying the database for the number of elements 1 more than the page size
     smiles_page_one_extra = [doc for doc in smiles_collection.order_by(field_path='expert_name').offset(start).limit(end - start + 1).get()]
 
@@ -354,7 +351,7 @@ def open_list_smiles_view(start, end, admin, add_info=None, update_info=None):
 @async_task
 def open_update_smile_view(trigger_id, current_user_id, admin):
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
-    update_smile_view = get_view('files/update_smile_modal.json')
+    update_smile_view = get_view('files/app_home/update_smile_modal.json')
     current_user_settings = settings_collection.document(current_user_id).get()
 
     search_result = smiles_collection.where('user_id', '==', current_user_id).get()
@@ -408,7 +405,7 @@ def open_update_smile_view(trigger_id, current_user_id, admin):
 @async_task
 def update_view4update_settings(view, info):
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
-    update_smile_view = get_view('files/update_smile_modal.json')
+    update_smile_view = get_view('files/app_home/update_smile_modal.json')
 
     send_notification_option = Option(
         value='send_notification',

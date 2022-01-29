@@ -1,0 +1,29 @@
+{
+	"type": "home",
+	"blocks": [
+		{
+			"block_id": "actions_block",
+			"elements": [
+				{
+					"action_id": "open_update_smile_view_action",
+					"text": {
+						"emoji": true,
+						"text": "Открыть настройки",
+						"type": "plain_text"
+					},
+					"type": "button"
+				},
+				{
+					"action_id": "open_all_smiles_action",
+					"text": {
+						"emoji": true,
+						"text": "Открыть список всех смайликов",
+						"type": "plain_text"
+					},
+					"type": "button"
+				}
+			],
+			"type": "actions"
+		}
+	]
+}
