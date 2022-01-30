@@ -1,35 +1,19 @@
-from flask import Blueprint
-from slack_sdk.errors import SlackApiError
-
-from slack_sdk.web import WebClient
-from slack_core import constants, get_view, extract_link_from_message
-from events_slack.expert_errors import *
-
 import pytz
 import cfscrape
 from datetime import datetime
 from firebase_admin import firestore
+from slack_sdk import WebClient
 
-from brainly_core import BrainlyTask, RequestError, BlockedError
-from slack_core import SlackEventAdapter
+from slack_core import extract_link_from_message, constants
 from slack_core.sheets import authorize
+from brainly_core import BrainlyTask, BlockedError, RequestError
+from .errors import SmileExistsButUserHasNotAnswer, ExpertNameNotFound
 
-
-event_endpoint_blueprint = Blueprint('event_endpoint', __name__)
-slack_event_adapter = SlackEventAdapter(router=event_endpoint_blueprint, rule='/event_endpoint')
 
 smiles_collection = firestore.client().collection('smiles')
 settings_collection = firestore.client().collection('users_settings')
 
 
-def get_last_message_by_ts(channel, ts):
-    client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
-    return client.conversations_history(channel=channel,
-                                        latest=str(float(ts)+1),
-                                        limit=1)
-
-
-@slack_event_adapter.on('reaction_added')
 def reaction_added(event_data):
     emoji = event_data["event"]["reaction"]
     doc = smiles_collection.document(emoji).get()
@@ -72,18 +56,10 @@ def reaction_added(event_data):
             send_notification = user_settings.get('send_notification') if user_settings.exists else False
 
             if send_notification:
-                bot.chat_postMessage(channel=user_id, text=f'В вопросе {link} освободились поля для ответов!\n'
-                                                           f'Ссылка на проверку: <https://znanija-archive.slack.com/archives/{event_data["event"]["item"]["channel"]}/{event_data["event"]["item"]["ts"].replace(".", "")}>')
+                bot.chat_postMessage(
+                    channel=user_id,
+                    text=f'В вопросе {link} освободились поля для ответов!\n'
+                         f'Ссылка на проверку: <https://znanija-archive.slack.com/archives/{event_data["event"]["item"]["channel"]}/{event_data["event"]["item"]["ts"].replace(".", "")}>'
+                )
         else:
             raise ExpertNameNotFound(f'Ник пользователя со смайлом {emoji} отсутствует в базе данных')
-
-
-@slack_event_adapter.on('app_home_opened')
-def app_home_opened(event_data):
-    bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
-    home_form = get_view('files/app_home/app_home.json')
-
-    try:
-        bot.views_publish(user_id=event_data['event']['user'], view=home_form, hash=event_data['event']['view']['hash'] if 'view' in event_data['event'] else None)
-    except SlackApiError:
-        pass

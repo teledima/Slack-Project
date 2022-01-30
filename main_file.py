@@ -1,6 +1,6 @@
 from flask import Flask, render_template
-from views_slack.view_endpoint import views_endpoint_blueprint
-from events_slack.event_endpoint import event_endpoint_blueprint
+from views_slack import views_endpoint_blueprint
+from events_slack import event_endpoint_blueprint
 from authorization import auth_blueprint
 from test_api.smiles_check import smiles_check_blueprint
 from znatok_helper_api import znatok_helper_blueprint
