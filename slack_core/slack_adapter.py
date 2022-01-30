@@ -42,14 +42,15 @@ class SlackInteractionsAdapter(SlackAdapter):
     def handler(self):
         payload = json.loads(request.form['payload'])
         for i, event in enumerate(self.event_names()):
-            assert len(event_path) == 2
             event_path = event.split('.')
-            if payload.get('type') in ('shortcut', 'view_submission'):
-                if event_path[0] == payload['type'] and event_path[1] == payload['view']['callback_id']:
-                    response = dict()
-                    self.emit(event, response)
-                    return jsonify(response), 200
+            assert len(event_path) == 2
+            if payload['type'] == 'shortcut' and event_path[0] == payload['type'] and event_path[1] == payload['callback_id']:
+                self.emit(event, payload)
+            elif payload['type'] == 'view_submission' and event_path[0] == payload['type'] and event_path[1] == payload['view']['callback_id']:
+                response = dict()
+                self.emit(event, payload, response)
+                return jsonify(response), 200
             elif payload.get('type') == 'block_actions':
                 if event_path[0] == payload['type'] and event_path[1] == payload['actions'][0]['action_id']:
-                    self.emit(event)
-                    return make_response('', 200)
+                    self.emit(event, payload)
+        return make_response('', 200)
