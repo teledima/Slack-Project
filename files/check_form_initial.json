@@ -1,5 +1,5 @@
 {
-	"callback_id": "send_check_form",
+	"callback_id": "check_form_callback",
 	"title": {
 		"type": "plain_text",
 		"text": "Форма для проверки",
@@ -15,10 +15,10 @@
 		{
 			"dispatch_action": true,
 			"type": "input",
-			"block_id": "link_id",
+			"block_id": "input_link_block",
 			"element": {
 				"type": "plain_text_input",
-				"action_id": "input_link_action_id"
+				"action_id": "input_link_action"
 			},
 			"label": {
 				"type": "plain_text",

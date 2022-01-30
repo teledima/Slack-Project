@@ -34,7 +34,7 @@ def entry_point():
     client = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
     if payload['type'] == 'shortcut':
         try:
-            if payload['callback_id'] == 'send_check_form':
+            if payload['callback_id'] == 'check_form_callback':
                 doc = authed_users_collection.document(payload['user']['id']).get()
                 if doc.exists:
                     view = get_view('files/check_form_initial.json')
@@ -51,20 +51,19 @@ def entry_point():
             code = e.response["error"]
             return make_response(f"Failed to open a modal due to {code}", 200)
     elif payload['type'] == 'block_actions':
-        if payload['view']['callback_id'] == 'send_check_form':
+        if payload['actions'][0]['action_id'] == 'input_link_action':
             # проверить введёную ссылку
-            link = [action['value'] for action in payload['actions']
-                    if action['block_id'] == 'link_id' and action['action_id'] == 'input_link_action_id']
-            cleared_link = None
+            link_raw = payload['actions'][0]['value']
+            link = None
+            if link_raw:
+                link = re.match(r'https?:/{2,}znanija\.com/+task/+\d+', link_raw).group()
             if link:
-                cleared_link = re.match(r'https?:/{2,}znanija\.com/+task/+\d+', link[0]).group()
-            if cleared_link:
                 # получить информацию о задаче
                 try:
-                    task_info = BrainlyTask.get_info(cleared_link, cfscrape.create_scraper())
+                    task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
                 except (BlockedError, RequestError):
                     # установить по умолчанию
-                    task_info = BrainlyTask(link=cleared_link)
+                    task_info = BrainlyTask(link=link)
 
                 view = construct_view(task_info)
                 view['private_metadata'] = json.dumps(
@@ -96,7 +95,7 @@ def entry_point():
             open_update_smile_view(payload['trigger_id'], payload['user']['id'], is_admin(payload['user']['id']))
 
     elif payload['type'] == 'view_submission':
-        if payload['view']['callback_id'] == 'send_check_form':
+        if payload['view']['callback_id'] == 'check_form_callback':
             message_payload = get_message_payload(client, payload)
             client = WebClient(token=message_payload['token'])
             response = client.chat_postMessage(
@@ -223,42 +222,53 @@ def construct_view(task_info: BrainlyTask):
     view = get_view('files/check_form_initial.json')
     view['submit'] = PlainTextObject(text='Отправить проверку').to_dict()
     if task_info.question is not None:
-        view['blocks'].append(SectionBlock(text=task_info.question, block_id='question_id').to_dict())
+        view['blocks'].append(SectionBlock(text=task_info.question, block_id='question_block').to_dict())
         view['blocks'].append(DividerBlock().to_dict())
     if task_info.answered_users:
         # вставить ответы в форму
         for i in range(0, len(task_info.answered_users)):
             view['blocks'].append(SectionBlock(text=f'_*Ответ {task_info.answered_users[i].username}*_').to_dict())
             view['blocks'].append(SectionBlock(text=PlainTextObject(text=task_info.answered_users[i].content),
-                                               block_id=f'answer_{i}_id').to_dict())
+                                               block_id=f'answer_{i}_block').to_dict())
 
     # блок для вердикта
-    verdict_element = PlainTextInputElement(action_id='verdict_id',
-                                            placeholder=PlainTextObject(text='Полное верное решение, '
-                                                                             'копия или есть ошибки?'),
-                                            multiline=True)
-    view['blocks'].append(InputBlock(label=PlainTextObject(text='Введите ваш вердикт'),
-                                     element=verdict_element,
-                                     optional=True,
-                                     block_id='verdict_input_id').to_dict())
+    view['blocks'].append(
+        InputBlock(
+            label=PlainTextObject(text='Введите ваш вердикт'),
+            element=PlainTextInputElement(
+                action_id='verdict_input_action',
+                placeholder=PlainTextObject(text='Полное верное решение, копия или есть ошибки?'),
+                multiline=True
+            ),
+            optional=True,
+            block_id='verdict_input_block'
+        ).to_dict()
+    )
 
     # выбор канала, в который отправится проверка
-    view['blocks'].append(SectionBlock(text='Проверка отправится в',
-                                       block_id='channel_block_id',
-                                       accessory=ChannelSelectElement(
-                                           placeholder='Выберите канал',
-                                           action_id='channel_selected_id',
-                                           initial_channel=initial_channel)).to_dict())
+    view['blocks'].append(
+        SectionBlock(
+            text='Проверка отправится в',
+            block_id='channel_select_block',
+            accessory=ChannelSelectElement(placeholder='Выберите канал',
+                                           action_id='channel_select_action',
+                                           initial_channel=initial_channel)
+        ).to_dict()
+    )
 
     # выбор предмета
-    select_subject_block = StaticSelectElement(action_id='select_subject_action_id',
-                                               placeholder=PlainTextObject(text='Выберите предмет'),
-                                               options=list_options,
-                                               initial_option=initial_option)
-
-    view['blocks'].append(SectionBlock(block_id='select_subject_block_id',
-                                       accessory=select_subject_block,
-                                       text='Выберите предмет').to_dict())
+    view['blocks'].append(
+        SectionBlock(
+            block_id='subject_select_block',
+            accessory=StaticSelectElement(
+                action_id='subject_select_action',
+                placeholder=PlainTextObject(text='Выберите предмет'),
+                options=list_options,
+                initial_option=initial_option
+            ),
+            text='Выберите предмет'
+        ).to_dict()
+    )
 
     return view
 
@@ -270,18 +280,18 @@ def get_message_payload(client: WebClient, payload):
         user = user_info['user']['profile']['display_name']
     elif user_info['user']['profile']['real_name']:
         user = user_info['user']['profile']['real_name']
-    link = payload['view']['state']['values']['link_id']['input_link_action_id']['value']
-    verdict = payload['view']['state']['values']['verdict_input_id']['verdict_id']['value']
-    question = [block for block in payload['view']['blocks'] if block['block_id'] == 'question_id']
+    link = payload['view']['state']['values']['input_link_block']['input_link_action']['value']
+    verdict = payload['view']['state']['values']['verdict_input_block']['verdict_input_action']['value']
+    question = [block for block in payload['view']['blocks'] if block['block_id'] == 'question_block']
     if question:
         question = question[0]['text']['text']
     else:
         question = None
-    channel_name = payload['view']['state']['values']['channel_block_id']['channel_selected_id']['selected_channel']
+    channel_name = payload['view']['state']['values']['channel_select_block']['channel_select_action']['selected_channel']
     private_metadata = json.loads(payload['view']['private_metadata'])
 
     cute_link = re.sub(r"http.*://", '', link)
-    subject = payload['view']['state']['values']['select_subject_block_id']['select_subject_action_id'][
+    subject = payload['view']['state']['values']['subject_select_block']['subject_select_action'][
         'selected_option']
     if subject:
         subject = subject['text']['text']
