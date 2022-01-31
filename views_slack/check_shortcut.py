@@ -11,11 +11,10 @@ from datetime import datetime
 from flask import request
 from firebase_admin import firestore
 
-from slack_core import constants, get_view
+from slack_core import constants, utils
 from slack_core.sheets import authorize
 from slack_core.tasks import async_task
 from brainly_core import BrainlyTask, BlockedError, RequestError
-from znatok_helper_api.watch import start_watch
 
 
 authed_users_collection = firestore.client().collection('authed_users')
@@ -27,7 +26,7 @@ def open_check_form(payload):
         if payload['callback_id'] == 'check_form_callback':
             doc = authed_users_collection.document(payload['user']['id']).get()
             if doc.exists:
-                view = get_view('files/check_form_initial.json')
+                view = utils.get_view('files/check_form_initial.json')
                 view['private_metadata'] = json.dumps(dict(token=doc.to_dict()['user']['access_token']))
                 client.views_open(trigger_id=payload['trigger_id'], view=view)
             else:
@@ -36,7 +35,7 @@ def open_check_form(payload):
                                              f'чтобы авторизоваться, и попробуйте снова',
                                         channel=payload['user']['id'],
                                         unfurl_links=False)
-    except slack_errors.SlackApiError as e:
+    except slack_errors.SlackApiError:
         pass
 
 
@@ -64,7 +63,7 @@ def input_link(payload):
         )
 
         # получить исходную форму
-        view = get_view('files/check_form_initial.json')
+        view = utils.get_view('files/check_form_initial.json')
         view['submit'] = PlainTextObject(text='Отправить проверку').to_dict()
         if task_info.question is not None:
             view['blocks'].append(SectionBlock(text=task_info.question, block_id='question_block').to_dict())
@@ -168,20 +167,18 @@ def submit_check_form(payload, result):
                     user=user, verdict=verdict, link=link, title=title, question=question)
 
     @async_task
-    def submit(user, link, channel, ts):
+    def submit(user, link):
         spreadsheet_client = authorize()
         spreadsheet = spreadsheet_client.open('Кандидаты(версия 2)')
         # insert new check
         spreadsheet.worksheet('test_list').append_row(
             [datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S'), 'проверка', user, link]
         )
-        # start watch
-        start_watch(link, channel, ts)
 
     client = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
     message_payload = get_message_payload()
     client = WebClient(token=message_payload['token'])
-    response = client.chat_postMessage(
+    client.chat_postMessage(
         channel=message_payload['channel_name'],
         text=message_payload['verdict'],
         as_user=True,
@@ -191,5 +188,5 @@ def submit_check_form(payload, result):
                                 fallback=message_payload['title']
                                 ).to_dict()]
     )
-    submit(message_payload['user'], message_payload['link'], response['channel'], response['ts'])
+    submit(message_payload['user'], message_payload['link'])
     result['response_action'] = 'clear'

@@ -4,7 +4,7 @@ import random
 from string import ascii_letters
 from slack_sdk import WebClient
 
-import constants
+import slack_core.constants as constants
 
 
 def get_view(filename):
