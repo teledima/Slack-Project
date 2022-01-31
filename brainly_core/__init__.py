@@ -1,7 +1,7 @@
+import re
+import sqlite3
 from bs4 import BeautifulSoup
 from typing import List
-import sqlite3
-import re
 
 
 class RequestError(Exception):

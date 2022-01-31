@@ -1,12 +1,12 @@
 from flask import Blueprint, request, redirect
-from slack_sdk.oauth.authorize_url_generator import AuthorizeUrlGenerator
-from slack_sdk.oauth.redirect_uri_page_renderer import RedirectUriPageRenderer
-from slack_sdk.web.client import WebClient
-from slack_core import constants
+from slack_sdk.oauth import AuthorizeUrlGenerator, RedirectUriPageRenderer
+from slack_sdk import WebClient
 from firebase_admin import firestore
+
+from slack_core import constants
 from authorization.document_types import AuthedUser
 
-auth_blueprint = Blueprint(name='auth', import_name=__name__, static_folder='templates')
+auth_blueprint = Blueprint(name='auth', import_name=__name__)
 
 
 @auth_blueprint.route('/auth', methods=['GET'])

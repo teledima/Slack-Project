@@ -1,17 +1,11 @@
 import pytz
 import cfscrape
 from datetime import datetime
-from firebase_admin import firestore
 from slack_sdk import WebClient
 
-from slack_core import extract_link_from_message, constants
-from slack_core.sheets import authorize
+from slack_core import utils, constants, authorize, smiles_collection, settings_collection
 from brainly_core import BrainlyTask, BlockedError, RequestError
 from .errors import SmileExistsButUserHasNotAnswer, ExpertNameNotFound
-
-
-smiles_collection = firestore.client().collection('smiles')
-settings_collection = firestore.client().collection('users_settings')
 
 
 def reaction_added(event_data):
@@ -20,7 +14,7 @@ def reaction_added(event_data):
     current_timestamp = datetime.now(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S')
     if doc.exists:
         expert_name = doc.to_dict()['expert_name']
-        link = extract_link_from_message(event_data['event']['item']['channel'], event_data['event']['item']['ts'])
+        link = utils.extract_link_from_message(event_data['event']['item']['channel'], event_data['event']['item']['ts'])
 
         client = authorize()
         # open 'popular' sheet
@@ -42,7 +36,7 @@ def reaction_added(event_data):
         if emoji == 'lower_left_ballpoint_pen':
             bot = WebClient(constants.SLACK_OAUTH_TOKEN_BOT)
 
-            link = extract_link_from_message(event_data['event']['item']['channel'], event_data['event']['item']['ts'])
+            link = utils.extract_link_from_message(event_data['event']['item']['channel'], event_data['event']['item']['ts'])
             response = bot.reactions_get(channel=event_data['event']['item']['channel'], full=True, timestamp=event_data["event"]["item"]["ts"])
             list_smiles = response[response['type']]['reactions']
             # if there are two or more emotions lower_left_ballpoint_pen in the message, then the notification will not be sent

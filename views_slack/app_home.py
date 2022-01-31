@@ -2,28 +2,21 @@ import re
 import json
 from slack_sdk import WebClient
 from slack_sdk.models.blocks import *
-from firebase_admin import firestore
 
-from slack_core.tasks import async_task
-from slack_core import constants, is_admin, get_view, generate_random_id, get_username
-
-
-firestore_client = firestore.client()
-smiles_collection = firestore_client.collection('smiles')
-settings_collection = firestore_client.collection('users_settings')
+from slack_core import constants, utils, async_task, settings_collection, smiles_collection
 
 
 def open_update_smile_view(payload):
     current_user_id = payload['user']['id']
 
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
-    update_smile_view = get_view('files/app_home/update_smile_modal.json')
+    update_smile_view = utils.get_view('files/app_home/update_smile_modal.json')
     current_user_settings = settings_collection.document(current_user_id).get()
 
     search_result = smiles_collection.where('user_id', '==', current_user_id).get()
     current_smile = {'id': search_result[0].id, 'user_id': search_result[0].get('user_id')} if search_result else None
 
-    if is_admin(payload['user']['id']):
+    if utils.is_admin(payload['user']['id']):
         update_smile_view['blocks'].append(
             ActionsBlock(
                 block_id='user_select_block',
@@ -69,25 +62,25 @@ def open_update_smile_view(payload):
 
 
 def update_smile_user_select(payload):
-    def get_info(user_id):
+    def get_settings(user_id):
         info = dict(type='info', smile=dict(), settings=dict())
         search_result = smiles_collection.where('user_id', '==', user_id).get()
-        user_settings = settings_collection.document(user_id).get()
+        settings_ref = settings_collection.document(user_id).get()
         if search_result:
             smile_info = search_result[0]
             info['smile'] = {'id': smile_info.id, 'user_id': user_id}
         else:
             info['smile'] = {'id': None, 'user_id': user_id}
-        if user_settings.exists:
-            info['settings']['send_notification'] = user_settings.get('send_notification')
+        if settings_ref.exists:
+            info['settings']['send_notification'] = settings_ref.get('send_notification')
         else:
             info['settings']['send_notification'] = False
         return info
-    user_info = get_info(payload['actions'][0]['selected_user'])
+    user_settings = get_settings(payload['actions'][0]['selected_user'])
     view = payload['view']
 
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
-    update_smile_view = get_view('files/app_home/update_smile_modal.json')
+    update_smile_view = utils.get_view('files/app_home/update_smile_modal.json')
 
     send_notification_option = Option(
         value='send_notification',
@@ -98,14 +91,14 @@ def update_smile_user_select(payload):
     update_smile_view['submit']['text'] = 'Обновить настройки'
     for i, block in enumerate(view['blocks']):
         if block['block_id'] == 'description_block':
-            if user_info['smile']["id"]:
-                block['text']['text'] = f'Смайлик <@{user_info["smile"]["user_id"]}> :{user_info["smile"]["id"]}:'
+            if user_settings['smile']["id"]:
+                block['text']['text'] = f'Смайлик <@{user_settings["smile"]["user_id"]}> :{user_settings["smile"]["id"]}:'
             else:
                 block['text']['text'] = 'Смайлик не выбран'
         elif 'elements' in block and 'settings_action' in block['elements'][0]['action_id']:
             # to update the checkbox on the page, you need to regenerate the id
-            block['block_id'] = generate_random_id()
-            if user_info['settings']['send_notification']:
+            block['block_id'] = utils.generate_random_id()
+            if user_settings['settings']['send_notification']:
                 block['elements'][0]['initial_options'] = [send_notification_option]
             elif block['elements'][0].get('initial_options'):
                 block['elements'][0].pop('initial_options')
@@ -116,21 +109,21 @@ def update_smile_user_select(payload):
 
 
 def open_all_smiles(payload):
-    open_list_smiles_view(start=0, end=constants.ALL_SMILES_PAGE_SIZE, admin=is_admin(payload['user']['id']),
+    open_list_smiles_view(start=0, end=constants.ALL_SMILES_PAGE_SIZE, admin=utils.is_admin(payload['user']['id']),
                           add_info={'trigger_id': payload['trigger_id']})
 
 
 def all_smiles_next_page(payload):
     metadata = json.loads(payload['view']['private_metadata'])
     open_list_smiles_view(start=metadata['end_at'], end=metadata['end_at'] + constants.ALL_SMILES_PAGE_SIZE,
-                          admin=is_admin(payload['user']['id']),
+                          admin=utils.is_admin(payload['user']['id']),
                           update_info={'view_id': payload['view']['id'], 'hash': payload['view']['hash']})
 
 
 def all_smiles_prev_page(payload):
     metadata = json.loads(payload['view']['private_metadata'])
     open_list_smiles_view(start=metadata['start_at'] - constants.ALL_SMILES_PAGE_SIZE, end=metadata['start_at'],
-                          admin=is_admin(payload['user']['id']),
+                          admin=utils.is_admin(payload['user']['id']),
                           update_info={'view_id': payload['view']['id'], 'hash': payload['view']['hash']})
 
 
@@ -141,7 +134,7 @@ def delete_smile(payload):
 
     metadata = json.loads(payload['view']['private_metadata'])
     open_list_smiles_view(start=metadata['start_at'], end=metadata['start_at'] + constants.ALL_SMILES_PAGE_SIZE,
-                          admin=is_admin(payload['user']['id']),
+                          admin=utils.is_admin(payload['user']['id']),
                           update_info={'view_id': payload['view']['id'], 'hash': payload['view']['hash']})
 
 
@@ -184,7 +177,7 @@ def submit_update_smile(payload, result):
         list(filter(lambda item: item['value'] == 'send_notification', selected_options))
     ) > 0
 
-    if is_admin(payload['user']['id']):
+    if utils.is_admin(payload['user']['id']):
         user_id = payload['view']['state']['values']['user_select_block']['user_select_action']['selected_user']
     else:
         user_id = None
@@ -192,7 +185,7 @@ def submit_update_smile(payload, result):
     user_id = user_id or payload['user']['id']
 
     if smile_raw:
-        username = get_username(user_id)
+        username = utils.get_username(user_id)
         change_errors = update_smile()
         if change_errors:
             result['response_action'] = 'errors'
@@ -208,7 +201,7 @@ def open_list_smiles_view(start, end, admin, add_info=None, update_info=None):
     assert add_info or update_info
 
     bot = WebClient(token=constants.SLACK_OAUTH_TOKEN_BOT)
-    all_smiles_view = get_view('files/app_home/all_smiles_modal.json')
+    all_smiles_view = utils.get_view('files/app_home/all_smiles_modal.json')
     # querying the database for the number of elements 1 more than the page size
     smiles_page_one_extra = [doc for doc in smiles_collection.order_by(field_path='expert_name').offset(start).limit(end - start + 1).get()]
 
