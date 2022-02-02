@@ -1,5 +1,0 @@
-# cron:
-# - description: "Automatic channels update"
-#   url: /check-slack-channels
-#   schedule: every 20 minutes from 08:00 to 23:59
-#   timezone: Europe/Moscow
