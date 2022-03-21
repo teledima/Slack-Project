@@ -25,11 +25,11 @@ def reaction_added(event_data):
             worksheet = client.open('Кандидаты(версия 2)').worksheet('test_list')
         try:
             answered_users = [answer.username.lower()
-                              for answer in BrainlyTask.get_info(link, cfscrape.create_scraper()).answered_users]
+                              for answer in BrainlyTask.get_info(link, cfscrape.create_scraper(headers={'User-Agent': 'RuArchiveSlackBot'})).answered_users]
             if expert_name.lower() in answered_users:
                 worksheet.append_row([current_timestamp, 'решение', expert_name, link])
             else:
-                raise SmileExistsButUserHasNotAnswer(f'Смайл "{emoji}" существует но пользователь, который к нему привязан не отвечал на данный вопрос. Пользатель, к которому привязан смайл: {expert_name}. Пользователи, ответившие на вопрос "{link}": {answered_users}')
+                raise SmileExistsButUserHasNotAnswer(f'Смайл "{emoji}" существует но пользователь, который к нему привязан не отвечал на данный вопрос. Пользователь, к которому привязан смайл: {expert_name}. Пользователи, ответившие на вопрос "{link}": {answered_users}')
         except (RequestError, BlockedError):
             worksheet.append_row([current_timestamp, 'решение', expert_name, link, '?'])
     else:

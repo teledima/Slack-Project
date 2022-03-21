@@ -128,7 +128,7 @@ def input_link(payload):
     if link:
         # получить информацию о задаче
         try:
-            task_info = BrainlyTask.get_info(link, cfscrape.create_scraper())
+            task_info = BrainlyTask.get_info(link, cfscrape.create_scraper(headers={'User-Agent': 'RuArchiveSlackBot'}))
         except (BlockedError, RequestError):
             # установить по умолчанию
             task_info = BrainlyTask(link=link)
